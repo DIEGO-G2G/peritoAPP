@@ -44,46 +44,51 @@ const MAKE_WEBHOOK = "https://hook.eu1.make.com/TU_WEBHOOK_AQUI";
 
 // ── catastro api ────────────────────────────────────────────────
 async function consultarCatastro(lat,lon){
-  const catastroUrl=`https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_RCCOOR?SRS=EPSG%3A4326&Coordenada_X=${lon}&Coordenada_Y=${lat}`;
-  const proxies=[
-    `https://corsproxy.io/?${encodeURIComponent(catastroUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(catastroUrl)}`,
+  var urls=[
+    'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_RCCOOR?SRS=EPSG%3A4326&Coordenada_X='+lon+'&Coordenada_Y='+lat,
+    'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR_Distancia?Coordenada_X='+lon+'&Coordenada_Y='+lat+'&SRS=EPSG:4326&Distancia=100',
   ];
-  let txt='';
-  let lastError='';
-  // Intentar directo primero
-  try{
-    const res=await fetch(catastroUrl,{signal:AbortSignal.timeout(6000)});
-    if(res.ok) txt=await res.text();
-  }catch(e){ lastError=e.message; }
-  // Si falla, usar proxies CORS
-  if(!txt||!txt.includes('pc1')){
-    for(const proxy of proxies){
+  function parseRC(txt){
+    if(!txt||txt.length<20) return null;
+    var pc1m=txt.match(/<pc1>([^<]+)<.pc1>/i);
+    var pc2m=txt.match(/<pc2>([^<]+)<.pc2>/i);
+    if(!pc1m||!pc2m) return null;
+    return{
+      rc:(pc1m[1]+pc2m[1]).trim(),
+      cp:((txt.match(/<cp>([^<]+)<.cp>/i)||[])[1]||''),
+      prov:((txt.match(/<np>([^<]+)<.np>/i)||[])[1]||''),
+      mun:((txt.match(/<nm>([^<]+)<.nm>/i)||[])[1]||''),
+      tv:((txt.match(/<tv>([^<]+)<.tv>/i)||[])[1]||''),
+      nv:((txt.match(/<nv>([^<]+)<.nv>/i)||[])[1]||''),
+      pnp:((txt.match(/<pnp>([^<]+)<.pnp>/i)||[])[1]||'s/n'),
+    };
+  }
+  function proxies(u){ return[
+    'https://corsproxy.io/?'+encodeURIComponent(u),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+  ];}
+  var lastTxt='';
+  for(var ci=0;ci<urls.length;ci++){
+    var catUrl=urls[ci];
+    try{
+      var r=await fetch(catUrl,{signal:AbortSignal.timeout(6000)});
+      var t=await r.text(); lastTxt=t;
+      var p=parseRC(t);
+      if(p) return Object.assign({},p,{direccion:(p.tv+' '+p.nv+' '+p.pnp+', '+p.cp+' '+p.mun+' ('+p.prov+')').trim()});
+    }catch(e){}
+    var plist=proxies(catUrl);
+    for(var pi=0;pi<plist.length;pi++){
       try{
-        const res=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
-        if(res.ok){ txt=await res.text(); if(txt&&txt.includes('pc1'))break; }
-      }catch(e){ lastError=e.message; }
+        var r2=await fetch(plist[pi],{signal:AbortSignal.timeout(9000)});
+        var t2=await r2.text(); lastTxt=t2;
+        var p2=parseRC(t2);
+        if(p2) return Object.assign({},p2,{direccion:(p2.tv+' '+p2.nv+' '+p2.pnp+', '+p2.cp+' '+p2.mun+' ('+p2.prov+')').trim()});
+      }catch(e2){}
     }
   }
-  if(!txt) return{rc:'Sin respuesta',direccion:'No se pudo conectar con Catastro.',error:lastError};
-  try{
-    const xml=new DOMParser().parseFromString(txt,'text/xml');
-    const codErr=xml.querySelector('cod')?.textContent;
-    if(codErr&&codErr!=='0') return{rc:'Sin datos',direccion:`Catastro: código error ${codErr}. Puede que las coordenadas GPS no coincidan exactamente con una parcela.`,error:`Cod ${codErr}`};
-    const pc1=xml.querySelector('pc1')?.textContent||'';
-    const pc2=xml.querySelector('pc2')?.textContent||'';
-    const rc=(pc1+pc2).trim();
-    if(!rc) return{rc:'No encontrada',direccion:'Catastro no devolvió referencia. Intenta estar más cerca del centro del inmueble.',error:'rc vacío'};
-    const cp=xml.querySelector('cp')?.textContent||'';
-    const prov=xml.querySelector('np')?.textContent||'';
-    const mun=xml.querySelector('nm')?.textContent||'';
-    const tv=xml.querySelector('tv')?.textContent||'';
-    const nv=xml.querySelector('nv')?.textContent||'';
-    const pnp=xml.querySelector('pnp')?.textContent||'s/n';
-    return{rc,direccion:`${tv} ${nv} ${pnp}, ${cp} ${mun} (${prov})`.trim(),provincia:prov,municipio:mun,cp,via:`${tv} ${nv}`,num:pnp};
-  }catch(e){
-    return{rc:'Error XML',direccion:'Error procesando respuesta de Catastro',error:e.message};
-  }
+  var snippet=lastTxt?lastTxt.substring(0,300):'Sin respuesta';
+  return{rc:'No encontrada',direccion:'Diagnóstico Catastro: '+snippet,error:'debug',debug:snippet};
 }
 
 
@@ -406,81 +411,115 @@ function TabCatastro({S,setS,addLog}){
       const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:15000}));
       const{latitude:lat,longitude:lon,accuracy}=pos.coords;
       setS(s=>({...s,gps:{lat,lon,accuracy}}));
-      addLog(`GPS obtenido: ${lat.toFixed(6)}, ${lon.toFixed(6)} (±${Math.round(accuracy)}m)`);
-      addLog('Consultando Sede Electrónica del Catastro...');
-      const cat=await consultarCatastro(lat,lon);
-      setS(s=>({...s,catastro:cat}));
-      addLog(`Referencia catastral: ${cat.rc}`,cat.error?'error':'success');
+      addLog('GPS obtenido: '+lat.toFixed(6)+', '+lon.toFixed(6)+' (±'+Math.round(accuracy)+'m)');
+      if(accuracy>100) addLog('⚠️ Precisión '+Math.round(accuracy)+'m. Sal al exterior para mejorarla.','error');
+      else addLog('✓ Precisión OK. Abre el mapa para identificar la parcela.','success');
     }catch(e){
-      setErr(e.message||'No se pudo obtener la ubicación. Comprueba los permisos.');
-      addLog('Error: '+e.message,'error');
+      setErr(e.code===1?'Permiso de ubicación denegado. Ve a Ajustes > Chrome > Ubicación y actívalo.':e.message||'Error GPS');
+      addLog('Error GPS: '+e.message,'error');
     }
     setLoading(false);
   };
 
+  const abrirCatastro=()=>{
+    if(!S.gps){ alert('Primero obtén tu posición GPS'); return; }
+    const url='https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?buscar=S&latitud='+S.gps.lat+'&longitud='+S.gps.lon;
+    window.open(url,'_blank');
+  };
+
+  const setRC=v=>{
+    setS(s=>({...s,rcManual:v,catastro:v?{rc:v,direccion:'Referencia introducida manualmente por el perito',manual:true}:null}));
+  };
+
+  const rcOk=S.catastro&&S.catastro.rc&&S.catastro.rc!=='No encontrada';
+
   return(
-    <div style={{padding:16}} className="fadeIn">
-      <Card title="GEOLOCALIZACIÓN GPS" ico="📍">
-        <div style={{background:'#0a1628',border:'1px solid #1e3a5f',borderRadius:7,padding:'8px 12px',marginBottom:14,fontSize:11,color:'#93c5fd',lineHeight:1.6}}>
-          📌 Debes estar <b>físicamente en el inmueble</b> siniestrado para que la geolocalización sea precisa y coincida con la parcela catastral
-        </div>
+    <div style={{padding:16}}>
 
+      {/* PASO 1: GPS */}
+      <Card title="PASO 1 — OBTENER POSICIÓN GPS" ico="📍">
         {!S.gps&&!loading&&(
-          <Btn full onClick={geolocate}>📍 OBTENER POSICIÓN + CATASTRO</Btn>
+          <Btn full onClick={geolocate}>📍 OBTENER MI POSICIÓN GPS</Btn>
         )}
-
         {loading&&(
-          <div style={{display:'flex',alignItems:'center',gap:14,background:'#0a0a0f',border:'1px solid #374151',borderRadius:8,padding:16,marginTop:8}}>
-            <div style={{width:28,height:28,borderRadius:'50%',border:'3px solid #374151',borderTopColor:'#f97316',flexShrink:0}} className="spin"/>
-            <div>
-              <div style={{color:'#f97316',fontWeight:700,fontSize:13}}>Localizando...</div>
-              <div style={{color:'#6b7280',fontSize:11,marginTop:2}}>GPS → API Catastro MEFP</div>
-            </div>
+          <div style={{display:'flex',alignItems:'center',gap:14,background:'#0a0a0f',border:'1px solid #374151',borderRadius:8,padding:16}}>
+            <div style={{width:26,height:26,borderRadius:'50%',border:'3px solid #374151',borderTopColor:'#f97316',flexShrink:0,animation:'spin .8s linear infinite'}}/>
+            <span style={{color:'#f97316',fontWeight:700,fontSize:13}}>Obteniendo GPS...</span>
           </div>
         )}
-
         {err&&(
-          <div style={{background:'#450a0a',border:'1px solid #dc2626',borderRadius:7,padding:'10px 12px',fontSize:12,color:'#fca5a5',marginTop:8}}>
+          <div style={{background:'#450a0a',border:'1px solid #dc2626',borderRadius:7,padding:'10px 12px',fontSize:12,color:'#fca5a5',lineHeight:1.6}}>
             ⚠️ {err}
           </div>
         )}
-
         {S.gps&&(
-          <div style={{background:'#0a0a0f',border:'1px solid #1f2937',borderRadius:8,padding:12,marginTop:10,borderLeft:'3px solid #3b82f6'}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#60a5fa',letterSpacing:1,marginBottom:8}}>📡 POSICIÓN GPS</div>
-            {[['Latitud',S.gps.lat.toFixed(6)+'°'],['Longitud',S.gps.lon.toFixed(6)+'°'],['Precisión','±'+Math.round(S.gps.accuracy)+'m']].map(([k,v])=>(
-              <div key={k} style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                <span style={{fontSize:11,color:'#6b7280'}}>{k}</span>
-                <span style={{fontSize:12,color:'#e5e7eb',fontWeight:600}}>{v}</span>
-              </div>
-            ))}
+          <div style={{background:'#052e16',border:'1px solid #16a34a',borderRadius:8,padding:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:'#86efac',letterSpacing:1,marginBottom:8}}>✓ POSICIÓN OBTENIDA</div>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+              <span style={{fontSize:11,color:'#6b7280'}}>Latitud</span>
+              <span style={{fontSize:12,color:'#e5e7eb',fontWeight:700}}>{S.gps.lat.toFixed(6)}°</span>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+              <span style={{fontSize:11,color:'#6b7280'}}>Longitud</span>
+              <span style={{fontSize:12,color:'#e5e7eb',fontWeight:700}}>{S.gps.lon.toFixed(6)}°</span>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between'}}>
+              <span style={{fontSize:11,color:'#6b7280'}}>Precisión</span>
+              <span style={{fontSize:12,color:S.gps.accuracy>100?'#fca5a5':'#86efac',fontWeight:700}}>±{Math.round(S.gps.accuracy)}m {S.gps.accuracy>100?'⚠️':'✓'}</span>
+            </div>
+            <button onClick={geolocate} style={{width:'100%',marginTop:10,padding:'7px',background:'none',border:'1px solid #374151',borderRadius:6,color:'#9ca3af',fontSize:11,cursor:'pointer',fontFamily:'monospace'}}>
+              ↺ Repetir localización
+            </button>
           </div>
         )}
+      </Card>
 
-        {S.catastro&&(
-          <div style={{background:'#0a0a0f',border:'1px solid #374151',borderRadius:8,padding:12,marginTop:10,borderLeft:'3px solid #f97316'}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#f97316',letterSpacing:1,marginBottom:10}}>🏛️ REFERENCIA CATASTRAL</div>
-            <div style={{background:'#1f2937',borderRadius:6,padding:'8px 12px',textAlign:'center',fontSize:18,fontWeight:700,color:'#f97316',letterSpacing:3,marginBottom:10}}>
-              {S.catastro.rc}
-            </div>
-            <div style={{fontSize:12,color:'#d1d5db',lineHeight:1.6,marginBottom:8}}>{S.catastro.direccion}</div>
-            {S.catastro.error&&<div style={{fontSize:11,color:'#fca5a5'}}>⚠️ {S.catastro.error}</div>}
-            <a href={`https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?del=&mun=&rc1=${S.catastro.rc?.substring(0,7)}&rc2=${S.catastro.rc?.substring(7,14)}`}
+      {/* PASO 2: ABRIR CATASTRO CENTRADO */}
+      <Card title="PASO 2 — IDENTIFICAR PARCELA EN CATASTRO" ico="🗺️">
+        <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'10px 12px',marginBottom:12,fontSize:12,color:'#fdba74',lineHeight:1.7}}>
+          <b>Flujo de trabajo:</b><br/>
+          1️⃣ Pulsa el botón naranja → se abre el mapa del Catastro centrado en tu posición GPS<br/>
+          2️⃣ Toca sobre la <b>parcela correcta</b> del inmueble siniestrado<br/>
+          3️⃣ Copia la <b>Referencia Catastral</b> que aparece<br/>
+          4️⃣ Vuelve aquí y pégala en el campo de abajo
+        </div>
+        <Btn full onClick={abrirCatastro}>
+          🗺️ ABRIR MAPA CATASTRO EN MI POSICIÓN
+        </Btn>
+        {!S.gps&&<p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:6}}>Primero obtén tu posición GPS (Paso 1)</p>}
+      </Card>
+
+      {/* PASO 3: INTRODUCIR RC */}
+      <Card title="PASO 3 — INTRODUCIR REFERENCIA CATASTRAL" ico="🏛️">
+        <div style={{fontSize:10,color:'#6b7280',letterSpacing:1,marginBottom:6}}>REFERENCIA CATASTRAL (20 caracteres)</div>
+        <input
+          value={S.rcManual||''}
+          onChange={e=>setRC(e.target.value.toUpperCase())}
+          placeholder="Ej: 9872023VH5797S0001WX"
+          maxLength={20}
+          style={{width:'100%',background:'#0a0a0f',border:'2px solid '+(rcOk?'#16a34a':'#f97316'),borderRadius:8,padding:'12px 14px',color:'#f97316',fontSize:16,fontFamily:'monospace',letterSpacing:2,textAlign:'center',marginBottom:10}}
+        />
+        {rcOk&&(
+          <div style={{background:'#052e16',border:'1px solid #16a34a',borderRadius:8,padding:12,textAlign:'center'}}>
+            <div style={{fontSize:22,fontWeight:700,color:'#86efac',letterSpacing:3,marginBottom:4}}>{S.catastro.rc}</div>
+            <div style={{fontSize:12,color:'#86efac'}}>✓ Referencia catastral confirmada</div>
+            <a href={'https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?del=&mun=&rc1='+S.catastro.rc.substring(0,7)+'&rc2='+S.catastro.rc.substring(7,14)}
                target="_blank" rel="noreferrer"
-               style={{display:'block',fontSize:11,color:'#60a5fa',marginTop:6,textDecoration:'none'}}>
+               style={{display:'block',fontSize:11,color:'#60a5fa',marginTop:8,textDecoration:'none'}}>
               🔗 Ver ficha catastral completa →
             </a>
           </div>
         )}
-
-        {S.gps&&!loading&&(
-          <Btn full secondary onClick={geolocate}>↺ Repetir localización</Btn>
+        {!rcOk&&(
+          <p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:4}}>
+            La RC son 20 caracteres. Cópiala exactamente del mapa del Catastro.
+          </p>
         )}
       </Card>
 
       {S.log.length>0&&(
         <Card title="LOG DE ACTIVIDAD" ico="📝">
-          <div style={{background:'#0a0a0f',borderRadius:6,padding:10,maxHeight:130,overflowY:'auto'}}>
+          <div style={{background:'#0a0a0f',borderRadius:6,padding:10,maxHeight:120,overflowY:'auto'}}>
             {S.log.map((l,i)=>(
               <div key={i} style={{fontSize:11,marginBottom:3,color:l.type==='error'?'#fca5a5':l.type==='success'?'#86efac':'#9ca3af'}}>
                 <span style={{color:'#4b5563'}}>{l.t} </span>{l.msg}
@@ -492,6 +531,7 @@ function TabCatastro({S,setS,addLog}){
     </div>
   );
 }
+
 
 // ════════════════════════════════════════════════════════════════
 // TAB ENVÍO
