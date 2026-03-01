@@ -44,24 +44,48 @@ const MAKE_WEBHOOK = "https://hook.eu1.make.com/TU_WEBHOOK_AQUI";
 
 // ── catastro api ────────────────────────────────────────────────
 async function consultarCatastro(lat,lon){
+  const catastroUrl=`https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_RCCOOR?SRS=EPSG%3A4326&Coordenada_X=${lon}&Coordenada_Y=${lat}`;
+  const proxies=[
+    `https://corsproxy.io/?${encodeURIComponent(catastroUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(catastroUrl)}`,
+  ];
+  let txt='';
+  let lastError='';
+  // Intentar directo primero
   try{
-    const url=`https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_RCCOOR?SRS=EPSG%3A4326&Coordenada_X=${lon}&Coordenada_Y=${lat}`;
-    const res=await fetch(url);
-    const txt=await res.text();
+    const res=await fetch(catastroUrl,{signal:AbortSignal.timeout(6000)});
+    if(res.ok) txt=await res.text();
+  }catch(e){ lastError=e.message; }
+  // Si falla, usar proxies CORS
+  if(!txt||!txt.includes('pc1')){
+    for(const proxy of proxies){
+      try{
+        const res=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+        if(res.ok){ txt=await res.text(); if(txt&&txt.includes('pc1'))break; }
+      }catch(e){ lastError=e.message; }
+    }
+  }
+  if(!txt) return{rc:'Sin respuesta',direccion:'No se pudo conectar con Catastro.',error:lastError};
+  try{
     const xml=new DOMParser().parseFromString(txt,'text/xml');
+    const codErr=xml.querySelector('cod')?.textContent;
+    if(codErr&&codErr!=='0') return{rc:'Sin datos',direccion:`Catastro: código error ${codErr}. Puede que las coordenadas GPS no coincidan exactamente con una parcela.`,error:`Cod ${codErr}`};
     const pc1=xml.querySelector('pc1')?.textContent||'';
     const pc2=xml.querySelector('pc2')?.textContent||'';
+    const rc=(pc1+pc2).trim();
+    if(!rc) return{rc:'No encontrada',direccion:'Catastro no devolvió referencia. Intenta estar más cerca del centro del inmueble.',error:'rc vacío'};
     const cp=xml.querySelector('cp')?.textContent||'';
     const prov=xml.querySelector('np')?.textContent||'';
     const mun=xml.querySelector('nm')?.textContent||'';
     const tv=xml.querySelector('tv')?.textContent||'';
     const nv=xml.querySelector('nv')?.textContent||'';
     const pnp=xml.querySelector('pnp')?.textContent||'s/n';
-    return{rc:pc1+pc2||'No encontrada',direccion:`${tv} ${nv} ${pnp}, ${cp} ${mun} (${prov})`,cp,prov,mun,via:`${tv} ${nv}`,num:pnp};
+    return{rc,direccion:`${tv} ${nv} ${pnp}, ${cp} ${mun} (${prov})`.trim(),provincia:prov,municipio:mun,cp,via:`${tv} ${nv}`,num:pnp};
   }catch(e){
-    return{rc:'Error consulta',direccion:'Sin conexión a Catastro',error:e.message};
+    return{rc:'Error XML',direccion:'Error procesando respuesta de Catastro',error:e.message};
   }
 }
+
 
 // ── speech hook ─────────────────────────────────────────────────
 function useSpeech(onText){
