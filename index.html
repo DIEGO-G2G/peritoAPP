@@ -421,14 +421,21 @@ function TabCatastro({S,setS,addLog}){
     setLoading(false);
   };
 
-  const abrirCatastro=()=>{
-    if(!S.gps){ alert('Primero obtén tu posición GPS'); return; }
-    // URL que abre directamente el buscador por coordenadas con los datos pre-rellenos
+  const [copied,setCopied]=useState(false);
+
+  const abrirCatastro=async()=>{
+    if(!S.gps){ alert('Primero obtén tu posición GPS (Paso 1)'); return; }
     var lat=S.gps.lat.toFixed(6);
     var lon=S.gps.lon.toFixed(6);
-    var url='https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx?tipo=coordenadas&latitud='+lat+'&longitud='+lon+'&SRS=EPSG%3A4326&huso=0';
-    window.open(url,'_blank');
+    // Copiar coordenadas al portapapeles
+    try{
+      await navigator.clipboard.writeText(lat+', '+lon);
+      setCopied(true);
+      setTimeout(()=>setCopied(false),5000);
+    }catch(e){}
+    window.open('https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx','_blank');
   };
+
 
   const setRC=v=>{
     setS(s=>({...s,rcManual:v,catastro:v?{rc:v,direccion:'Referencia introducida manualmente por el perito',manual:true}:null}));
@@ -481,14 +488,23 @@ function TabCatastro({S,setS,addLog}){
       <Card title="PASO 2 — IDENTIFICAR PARCELA EN CATASTRO" ico="🗺️">
         <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'10px 12px',marginBottom:12,fontSize:12,color:'#fdba74',lineHeight:1.7}}>
           <b>Flujo de trabajo:</b><br/>
-          1️⃣ Pulsa el botón naranja → el Catastro se abre con tus coordenadas GPS ya introducidas<br/>
-          2️⃣ Pulsa <b>"Buscar"</b> en la web del Catastro → verás las parcelas de tu zona<br/>
-          3️⃣ Identifica y toca la <b>parcela correcta</b> del inmueble siniestrado<br/>
-          4️⃣ Copia la <b>Referencia Catastral</b> (20 caracteres)<br/>
-          5️⃣ Vuelve aquí y pégala en el Paso 3
+          1️⃣ Pulsa el botón naranja → <b>las coordenadas se copian solas al portapapeles</b> y se abre el Catastro<br/>
+          2️⃣ En el Catastro selecciona la pestaña <b>"Coordenadas"</b><br/>
+          3️⃣ Pega las coordenadas con <b>mantener pulsado → Pegar</b><br/>
+          4️⃣ Pulsa <b>"Buscar"</b> → toca la parcela correcta<br/>
+          5️⃣ Copia la <b>Referencia Catastral</b> y vuelve aquí al Paso 3
         </div>
+        {S.gps&&(
+          <div style={{background:'#1f2937',border:'1px solid #374151',borderRadius:8,padding:12,marginBottom:10,textAlign:'center'}}>
+            <div style={{fontSize:10,color:'#6b7280',letterSpacing:1,marginBottom:4}}>COORDENADAS A PEGAR EN CATASTRO</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#f97316',letterSpacing:1,fontFamily:'monospace'}}>
+              {S.gps.lat.toFixed(6)}, {S.gps.lon.toFixed(6)}
+            </div>
+            {copied&&<div style={{fontSize:11,color:'#86efac',marginTop:4}}>✓ Copiadas al portapapeles</div>}
+          </div>
+        )}
         <Btn full onClick={abrirCatastro}>
-          🗺️ ABRIR MAPA CATASTRO EN MI POSICIÓN
+          {copied?'✓ COORDENADAS COPIADAS — ABRIENDO CATASTRO':'🗺️ COPIAR COORDS Y ABRIR CATASTRO'}
         </Btn>
         {!S.gps&&<p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:6}}>Primero obtén tu posición GPS (Paso 1)</p>}
       </Card>
