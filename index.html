@@ -4,216 +4,141 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0a0a0f"/>
-<title>PeritoApp — Gestión de Siniestros</title>
+<title>PeritoApp</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{background:#0a0a0f;font-family:'IBM Plex Mono',monospace;color:#e5e7eb;overscroll-behavior:none;}
-  input,textarea,select{font-family:'IBM Plex Mono',monospace;color:#e5e7eb;background:#0a0a0f;}
-  input:focus,textarea:focus{outline:none;border-color:#f97316!important;}
-  ::-webkit-scrollbar{width:3px;}
-  ::-webkit-scrollbar-track{background:#0a0a0f;}
-  ::-webkit-scrollbar-thumb{background:#374151;border-radius:2px;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  @keyframes ping{75%,100%{transform:scale(2);opacity:0;}}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-  @keyframes recordPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}50%{box-shadow:0 0 0 12px rgba(239,68,68,0);}}
-  .spin{animation:spin .8s linear infinite;}
-  .fadeIn{animation:fadeIn .25s ease;}
-  .recBtn{animation:recordPulse 1.2s ease infinite;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#0a0a0f;font-family:'IBM Plex Mono',monospace;color:#e5e7eb;overscroll-behavior:none;}
+input,textarea{font-family:'IBM Plex Mono',monospace;}
+input:focus,textarea:focus{outline:none;border-color:#f97316!important;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:#374151;border-radius:2px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5);}50%{box-shadow:0 0 0 10px rgba(239,68,68,0);}}
+.fadeIn{animation:fadeIn .2s ease;}
+.micActive{animation:micPulse 1.2s ease infinite!important;}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useRef, useCallback, useEffect } = React;
+const {useState,useRef,useCallback}=React;
 
-// ── utilidades ──────────────────────────────────────────────────
-const uid = () => Math.random().toString(36).substr(2,9);
-const fmtDate = (d=new Date()) => d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
-const fmtTime = (d=new Date()) => d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-const delay = ms => new Promise(r=>setTimeout(r,ms));
+const MAKE_WEBHOOK="https://hook.eu1.make.com/TU_WEBHOOK_AQUI";
+const uid=()=>Math.random().toString(36).substr(2,9);
+const fmtDate=(d=new Date())=>d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
+const fmtTime=(d=new Date())=>d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
 
-const MAKE_WEBHOOK = "https://hook.eu1.make.com/TU_WEBHOOK_AQUI";
-
-// ── catastro api ────────────────────────────────────────────────
-async function consultarCatastro(lat,lon){
-  var urls=[
-    'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_RCCOOR?SRS=EPSG%3A4326&Coordenada_X='+lon+'&Coordenada_Y='+lat,
-    'https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR_Distancia?Coordenada_X='+lon+'&Coordenada_Y='+lat+'&SRS=EPSG:4326&Distancia=100',
-  ];
-  function parseRC(txt){
-    if(!txt||txt.length<20) return null;
-    var pc1m=txt.match(/<pc1>([^<]+)<.pc1>/i);
-    var pc2m=txt.match(/<pc2>([^<]+)<.pc2>/i);
-    if(!pc1m||!pc2m) return null;
-    return{
-      rc:(pc1m[1]+pc2m[1]).trim(),
-      cp:((txt.match(/<cp>([^<]+)<.cp>/i)||[])[1]||''),
-      prov:((txt.match(/<np>([^<]+)<.np>/i)||[])[1]||''),
-      mun:((txt.match(/<nm>([^<]+)<.nm>/i)||[])[1]||''),
-      tv:((txt.match(/<tv>([^<]+)<.tv>/i)||[])[1]||''),
-      nv:((txt.match(/<nv>([^<]+)<.nv>/i)||[])[1]||''),
-      pnp:((txt.match(/<pnp>([^<]+)<.pnp>/i)||[])[1]||'s/n'),
-    };
-  }
-  function proxies(u){ return[
-    'https://corsproxy.io/?'+encodeURIComponent(u),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
-  ];}
-  var lastTxt='';
-  for(var ci=0;ci<urls.length;ci++){
-    var catUrl=urls[ci];
-    try{
-      var r=await fetch(catUrl,{signal:AbortSignal.timeout(6000)});
-      var t=await r.text(); lastTxt=t;
-      var p=parseRC(t);
-      if(p) return Object.assign({},p,{direccion:(p.tv+' '+p.nv+' '+p.pnp+', '+p.cp+' '+p.mun+' ('+p.prov+')').trim()});
-    }catch(e){}
-    var plist=proxies(catUrl);
-    for(var pi=0;pi<plist.length;pi++){
-      try{
-        var r2=await fetch(plist[pi],{signal:AbortSignal.timeout(9000)});
-        var t2=await r2.text(); lastTxt=t2;
-        var p2=parseRC(t2);
-        if(p2) return Object.assign({},p2,{direccion:(p2.tv+' '+p2.nv+' '+p2.pnp+', '+p2.cp+' '+p2.mun+' ('+p2.prov+')').trim()});
-      }catch(e2){}
-    }
-  }
-  var snippet=lastTxt?lastTxt.substring(0,300):'Sin respuesta';
-  return{rc:'No encontrada',direccion:'Diagnóstico Catastro: '+snippet,error:'debug',debug:snippet};
-}
-
-
-// ── speech hook ─────────────────────────────────────────────────
-function useSpeech(onText){
+// ── MICRÓFONO TOGGLE ─────────────────────────────────────────────
+// Un toque activa, otro toque para. No hace falta mantener pulsado.
+function useMic(onText){
   const ref=useRef(null);
-  const [active,setActive]=useState(false);
-  const start=useCallback(()=>{
+  const [on,setOn]=useState(false);
+
+  const toggle=useCallback(()=>{
+    if(on){
+      ref.current?.stop();
+      ref.current=null;
+      setOn(false);
+      return;
+    }
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){alert('Usa Chrome en Android para el reconocimiento de voz.');return;}
-    const r=new SR();r.lang='es-ES';r.continuous=true;r.interimResults=false;
-    r.onresult=e=>{let t='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)t+=e.results[i][0].transcript+' ';}if(t)onText(t);};
-    r.onend=()=>setActive(false);r.onerror=()=>setActive(false);
-    r.start();ref.current=r;setActive(true);
-  },[onText]);
-  const stop=useCallback(()=>{ref.current?.stop();setActive(false);},[]);
-  return{active,start,stop};
+    if(!SR){alert('Reconocimiento de voz requiere Chrome en Android.');return;}
+    const r=new SR();
+    r.lang='es-ES'; // Español de España — Chrome hace corrección automática
+    r.continuous=true;
+    r.interimResults=false;
+    r.onresult=e=>{
+      let t='';
+      for(let i=e.resultIndex;i<e.results.length;i++)
+        if(e.results[i].isFinal) t+=e.results[i][0].transcript+' ';
+      if(t) onText(t);
+    };
+    r.onerror=e=>{ if(e.error!=='no-speech'){ref.current=null;setOn(false);} };
+    r.onend=()=>{ if(ref.current===r){try{r.start();}catch(e){ref.current=null;setOn(false);}} };
+    r.start();
+    ref.current=r;
+    setOn(true);
+  },[on,onText]);
+
+  const stop=useCallback(()=>{ref.current?.stop();ref.current=null;setOn(false);},[]);
+  return{on,toggle,stop};
 }
 
-// ── colores cobertura ───────────────────────────────────────────
+// ── FIELD CON MICRÓFONO ──────────────────────────────────────────
+function Field({label,value,onChange,placeholder,type='text',half,rows,multiline}){
+  const onText=useCallback(t=>onChange(value+t),[value,onChange]);
+  const mic=useMic(onText);
+  const isMulti=multiline||rows;
+  const inputStyle={
+    width:'100%',background:'#0a0a0f',
+    border:'1px solid '+(mic.on?'#ef4444':'#374151'),
+    borderRadius:6,padding:'10px 42px 10px 10px',
+    color:'#e5e7eb',fontSize:13,fontFamily:'IBM Plex Mono,monospace',
+    resize:isMulti?'vertical':undefined,minHeight:isMulti?(rows?rows*28:80):undefined,
+  };
+  return(
+    <div style={{flex:half?1:undefined,marginBottom:12,position:'relative'}}>
+      <div style={{fontSize:11,fontWeight:600,color:'#d1d5db',letterSpacing:1,marginBottom:5}}>{label}</div>
+      <div style={{position:'relative'}}>
+        {isMulti
+          ?<textarea value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={inputStyle} rows={rows||3}/>
+          :<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={inputStyle}/>
+        }
+        <button onClick={mic.toggle} className={mic.on?'micActive':''}
+          title={mic.on?'Toca para parar':'Toca para dictar'}
+          style={{position:'absolute',right:7,top:'50%',transform:'translateY(-50%)',
+            width:28,height:28,borderRadius:'50%',padding:0,
+            background:mic.on?'#ef4444':'#1f2937',
+            border:'none',cursor:'pointer',fontSize:14,
+            display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          🎙️
+        </button>
+      </div>
+      {mic.on&&<div style={{fontSize:10,color:'#ef4444',marginTop:3,letterSpacing:.5}}>● ESCUCHANDO — toca 🎙️ para parar</div>}
+    </div>
+  );
+}
+
+// ── CARD ─────────────────────────────────────────────────────────
+function Card({title,ico,children}){
+  return(
+    <div style={{background:'#0f0f17',border:'1px solid #1f2937',borderRadius:10,padding:14,marginBottom:14}}>
+      <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:12,paddingBottom:8,borderBottom:'1px solid #1f2937'}}>
+        <span style={{fontSize:15}}>{ico}</span>
+        <span style={{fontSize:12,fontWeight:700,letterSpacing:2,color:'#f97316'}}>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── BTN ──────────────────────────────────────────────────────────
+function Btn({children,onClick,danger,secondary,disabled,full}){
+  return(
+    <button onClick={onClick} disabled={disabled} style={{
+      width:full?'100%':undefined,padding:'11px 16px',
+      background:disabled?'#1f2937':danger?'#7f1d1d':secondary?'#1f2937':'#ea580c',
+      border:'1px solid '+(disabled?'#374151':danger?'#ef4444':secondary?'#374151':'#ea580c'),
+      borderRadius:7,color:disabled?'#6b7280':danger?'#fca5a5':secondary?'#d1d5db':'#fff',
+      fontSize:13,fontWeight:700,cursor:disabled?'not-allowed':'pointer',
+      fontFamily:'IBM Plex Mono,monospace',letterSpacing:.5,
+      display:'flex',alignItems:'center',justifyContent:'center',gap:7,marginTop:6,
+    }}>{children}</button>
+  );
+}
+
 const cobColor={
   cubre:{bg:'#052e16',border:'#16a34a',color:'#86efac'},
   rechaza:{bg:'#450a0a',border:'#dc2626',color:'#fca5a5'},
   pendiente:{bg:'#431407',border:'#ea580c',color:'#fdba74'},
 };
-
-// ════════════════════════════════════════════════════════════════
-// APP ROOT
-// ════════════════════════════════════════════════════════════════
-function App(){
-  const [tab,setTab]=useState('datos');
-  const [S,setS]=useState({
-    id:uid(),poliza:'',asegurado:'',perito:'',
-    fecha:fmtDate(),hora:fmtTime(),
-    fotos:[],narracion:'',causa:'',elementos:'',valoracion:'',
-    cobertura:'',motivoCob:'',
-    catastro:null,gps:null,
-    estado:'borrador',log:[]
-  });
-  const upd=(k,v)=>setS(s=>({...s,[k]:v}));
-  const addLog=(msg,type='info')=>setS(s=>({...s,log:[...s.log,{msg,type,t:fmtTime()}]}));
-
-  const prog=[
-    {l:'Datos básicos',ok:S.poliza&&S.asegurado&&S.perito},
-    {l:'Fotografías',ok:S.fotos.length>0},
-    {l:'Narración',ok:S.narracion.length>20},
-    {l:'Catastro',ok:!!S.catastro},
-  ];
-  const pct=Math.round(prog.filter(p=>p.ok).length/prog.length*100);
-  const stateColor={borrador:'#f59e0b',subiendo:'#3b82f6',completado:'#22c55e',error:'#ef4444'};
-
-  return(
-    <div style={{display:'flex',flexDirection:'column',minHeight:'100vh',maxWidth:520,margin:'0 auto',background:'#0a0a0f'}}>
-
-      {/* HEADER */}
-      <div style={{background:'#0f0f17',borderBottom:'1px solid #1f2937',padding:'10px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,zIndex:50}}>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontSize:20}}>🛡️</span>
-          <span style={{fontWeight:700,fontSize:15,letterSpacing:2,color:'#f97316'}}>PERITOAPP</span>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{background:stateColor[S.estado],borderRadius:4,padding:'2px 7px',fontSize:10,fontWeight:700,color:'#000',letterSpacing:1}}>{S.estado.toUpperCase()}</span>
-          <span style={{fontSize:10,color:'#4b5563',letterSpacing:1}}>#{S.id.toUpperCase()}</span>
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div style={{flex:1,overflowY:'auto',paddingBottom:72}}>
-        {tab==='datos'   && <TabDatos   S={S} upd={upd} pct={pct} prog={prog} setTab={setTab}/>}
-        {tab==='fotos'   && <TabFotos   S={S} setS={setS}/>}
-        {tab==='narracion'&&<TabNarracion S={S} upd={upd}/>}
-        {tab==='catastro'&& <TabCatastro S={S} setS={setS} addLog={addLog}/>}
-        {tab==='envio'   && <TabEnvio   S={S} setS={setS} addLog={addLog}/>}
-      </div>
-
-      {/* NAV */}
-      <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:520,background:'#0f0f17',borderTop:'1px solid #1f2937',display:'flex',zIndex:50}}>
-        {[
-          {id:'datos',ico:'📋',label:'Datos'},
-          {id:'fotos',ico:'📷',label:'Fotos',badge:S.fotos.length},
-          {id:'narracion',ico:'🎙️',label:'Narración'},
-          {id:'catastro',ico:'🏛️',label:'Catastro'},
-          {id:'envio',ico:'🚀',label:'Enviar'},
-        ].map(it=>(
-          <button key={it.id} onClick={()=>setTab(it.id)} style={{flex:1,background:tab===it.id?'#1a1a24':'none',border:'none',cursor:'pointer',padding:'8px 2px',display:'flex',flexDirection:'column',alignItems:'center',gap:2,position:'relative'}}>
-            <span style={{fontSize:18}}>{it.ico}</span>
-            {it.badge>0&&<span style={{position:'absolute',top:4,right:'18%',background:'#ef4444',color:'#fff',borderRadius:'50%',width:14,height:14,fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>{it.badge}</span>}
-            <span style={{fontSize:9,color:tab===it.id?'#f97316':'#6b7280',letterSpacing:.5,fontWeight:tab===it.id?700:400}}>{it.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── COMPONENTES COMUNES ──────────────────────────────────────────
-function Card({title,ico,children}){
-  return(
-    <div style={{background:'#0f0f17',border:'1px solid #1f2937',borderRadius:10,padding:14,marginBottom:14}}>
-      <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:12,paddingBottom:8,borderBottom:'1px solid #1f2937'}}>
-        <span style={{fontSize:14}}>{ico}</span>
-        <span style={{fontSize:11,fontWeight:700,letterSpacing:2,color:'#f97316'}}>{title}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
-function Field({label,value,onChange,placeholder,type='text',half}){
-  return(
-    <div style={{flex:half?1:undefined,marginBottom:10}}>
-      <div style={{fontSize:10,color:'#6b7280',letterSpacing:1,marginBottom:4}}>{label}</div>
-      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        style={{width:'100%',background:'#0a0a0f',border:'1px solid #374151',borderRadius:6,padding:'9px 10px',color:'#e5e7eb',fontSize:13,fontFamily:'IBM Plex Mono,monospace'}}/>
-    </div>
-  );
-}
-function Btn({children,onClick,danger,secondary,disabled,full}){
-  const bg=danger?'#7f1d1d':secondary?'#1f2937':'#ea580c';
-  const bc=danger?'#ef4444':secondary?'#374151':'#ea580c';
-  return(
-    <button onClick={onClick} disabled={disabled} style={{width:full?'100%':undefined,padding:'11px 16px',background:disabled?'#1f2937':bg,border:`1px solid ${disabled?'#374151':bc}`,borderRadius:7,color:disabled?'#6b7280':danger?'#fca5a5':secondary?'#d1d5db':'#fff',fontSize:13,fontWeight:700,cursor:disabled?'not-allowed':'pointer',fontFamily:'IBM Plex Mono,monospace',letterSpacing:.8,display:'flex',alignItems:'center',justifyContent:'center',gap:7,marginTop:6}}>
-      {children}
-    </button>
-  );
-}
 
 // ════════════════════════════════════════════════════════════════
 // TAB DATOS
@@ -223,43 +148,50 @@ function TabDatos({S,upd,pct,prog,setTab}){
     <div style={{padding:16}} className="fadeIn">
       <Card title="DATOS DEL EXPEDIENTE" ico="📋">
         <Field label="Nº PÓLIZA" value={S.poliza} onChange={v=>upd('poliza',v)} placeholder="XXX-000000"/>
-        <Field label="ASEGURADO / TOMADOR" value={S.asegurado} onChange={v=>upd('asegurado',v)} placeholder="Nombre y apellidos"/>
+        <Field label="ASEGURADO / TOMADOR" value={S.asegurado} onChange={v=>upd('asegurado',v)} placeholder="Nombre y apellidos completos"/>
         <Field label="PERITO ACTUANTE" value={S.perito} onChange={v=>upd('perito',v)} placeholder="Tu nombre completo"/>
         <div style={{display:'flex',gap:10}}>
-          <Field label="FECHA SINIESTRO" value={S.fecha} onChange={v=>upd('fecha',v)} placeholder="DD/MM/AAAA" half/>
-          <Field label="HORA" value={S.hora} onChange={v=>upd('hora',v)} placeholder="HH:MM" half/>
+          <Field label="FECHA SINIESTRO" value={S.fechaSiniestro} onChange={v=>upd('fechaSiniestro',v)} placeholder="DD/MM/AAAA" half/>
+          <Field label="FECHA VISITA" value={S.fechaVisita} onChange={v=>upd('fechaVisita',v)} placeholder="DD/MM/AAAA" half/>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <Field label="HORA VISITA" value={S.horaVisita} onChange={v=>upd('horaVisita',v)} placeholder="HH:MM" half/>
+          <Field label="Nº EXPTE. CÍA." value={S.expCia} onChange={v=>upd('expCia',v)} placeholder="Ref. aseguradora" half/>
         </div>
       </Card>
 
       <Card title="COBERTURA / RECHAZO" ico="⚖️">
         <div style={{display:'flex',gap:8,marginBottom:10}}>
           {['cubre','rechaza','pendiente'].map(c=>(
-            <button key={c} onClick={()=>upd('cobertura',c)} style={{flex:1,padding:'10px 4px',background:S.cobertura===c?cobColor[c].bg:'#1f2937',border:`1px solid ${S.cobertura===c?cobColor[c].border:'#374151'}`,borderRadius:7,color:S.cobertura===c?cobColor[c].color:'#9ca3af',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',letterSpacing:.5}}>
-              {c==='cubre'?'✓ CUBRE':c==='rechaza'?'✗ RECHAZA':'⧖ PDTE'}
+            <button key={c} onClick={()=>upd('cobertura',c)} style={{
+              flex:1,padding:'10px 4px',
+              background:S.cobertura===c?cobColor[c].bg:'#1f2937',
+              border:'1px solid '+(S.cobertura===c?cobColor[c].border:'#374151'),
+              borderRadius:7,color:S.cobertura===c?cobColor[c].color:'#c0c0c0',
+              fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',
+            }}>
+              {c==='cubre'?'✓ CUBRE':c==='rechaza'?'✗ RECHAZA':'⧖ PENDIENTE'}
             </button>
           ))}
         </div>
         {S.cobertura&&(
-          <textarea value={S.motivoCob} onChange={e=>upd('motivoCob',e.target.value)}
-            placeholder={`Motivo de ${S.cobertura==='cubre'?'cobertura':S.cobertura==='rechaza'?'rechazo':'consulta'}...`}
-            rows={3} style={{width:'100%',background:'#0a0a0f',border:'1px solid #374151',borderRadius:6,padding:'9px 10px',color:'#e5e7eb',fontSize:12,fontFamily:'IBM Plex Mono,monospace',resize:'vertical'}}/>
+          <Field label="MOTIVO DE LA DECISIÓN" value={S.motivoCob} onChange={v=>upd('motivoCob',v)}
+            placeholder="Explica el motivo de cobertura, rechazo o consulta..." multiline rows={2}/>
         )}
       </Card>
 
       <Card title="PROGRESO DEL INFORME" ico="📊">
         <div style={{background:'#1f2937',borderRadius:4,height:8,marginBottom:6,overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${pct}%`,background:pct===100?'#22c55e':'#f97316',borderRadius:4,transition:'width .5s'}}/>
+          <div style={{height:'100%',width:pct+'%',background:pct===100?'#22c55e':'#f97316',borderRadius:4,transition:'width .5s'}}/>
         </div>
         <div style={{fontSize:13,color:pct===100?'#22c55e':'#f97316',fontWeight:700,marginBottom:10}}>{pct}% completado</div>
         {prog.map((p,i)=>(
           <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
             <span style={{fontSize:14}}>{p.ok?'✅':'⬜'}</span>
-            <span style={{fontSize:12,color:p.ok?'#d1fae5':'#9ca3af'}}>{p.l}</span>
+            <span style={{fontSize:12,color:p.ok?'#d1fae5':'#c0c0c0'}}>{p.l}</span>
           </div>
         ))}
-        {pct===100&&(
-          <Btn full onClick={()=>setTab('envio')}>🚀 ENVIAR INFORME</Btn>
-        )}
+        {pct===100&&<Btn full onClick={()=>setTab('envio')}>🚀 IR A ENVIAR INFORME</Btn>}
       </Card>
     </div>
   );
@@ -273,9 +205,8 @@ function TabFotos({S,setS}){
   const [editId,setEditId]=useState(null);
   const [capText,setCapText]=useState('');
   const editFoto=S.fotos.find(f=>f.id===editId);
-
-  const onVoice=useCallback(t=>setCapText(p=>p+t),[]);
-  const speech=useSpeech(onVoice);
+  const onText=useCallback(t=>setCapText(p=>p+t),[]);
+  const mic=useMic(onText);
 
   const handleFiles=e=>{
     Array.from(e.target.files).forEach(f=>{
@@ -287,68 +218,61 @@ function TabFotos({S,setS}){
   };
 
   const saveCaption=()=>{
+    mic.stop();
     setS(s=>({...s,fotos:s.fotos.map(f=>f.id===editId?{...f,caption:capText}:f)}));
-    setEditId(null);speech.stop();
+    setEditId(null);
   };
-  const delFoto=id=>setS(s=>({...s,fotos:s.fotos.filter(f=>f.id!==id)}));
 
   return(
     <div style={{padding:16}} className="fadeIn">
       <Card title="FOTOGRAFÍAS DEL SINIESTRO" ico="📷">
         <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" onChange={handleFiles} style={{display:'none'}}/>
         <Btn full onClick={()=>fileRef.current.click()}>📷 TOMAR FOTO CON LA CÁMARA</Btn>
-        <Btn full secondary onClick={()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.multiple=true;fi.onchange=handleFiles;fi.click();}}>🖼️ SELECCIONAR DE GALERÍA</Btn>
-        <p style={{fontSize:11,color:'#6b7280',marginTop:8,lineHeight:1.6}}>Fotografía todos los daños visibles. Después añade el pie de foto por voz o texto.</p>
+        <p style={{fontSize:11,color:'#9ca3af',marginTop:8,lineHeight:1.6}}>Tras tomar la foto, pulsa "Añadir pie" y dicta o escribe la descripción del daño.</p>
       </Card>
 
-      {/* MODAL PIE DE FOTO */}
       {editId&&(
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.9)',zIndex:200,display:'flex',alignItems:'flex-end'}} onClick={e=>{if(e.target===e.currentTarget){speech.stop();setEditId(null);}}}>
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.93)',zIndex:200,display:'flex',alignItems:'flex-end'}}>
           <div style={{background:'#0f0f17',borderTop:'2px solid #f97316',borderRadius:'14px 14px 0 0',padding:20,width:'100%',maxWidth:520,margin:'0 auto'}} className="fadeIn">
             <div style={{fontSize:11,fontWeight:700,letterSpacing:2,color:'#f97316',marginBottom:10}}>✏️ PIE DE FOTO</div>
-            {editFoto&&<img src={editFoto.dataUrl} style={{width:'100%',maxHeight:140,objectFit:'cover',borderRadius:8,marginBottom:10}}/>}
+            {editFoto&&<img src={editFoto.dataUrl} style={{width:'100%',maxHeight:130,objectFit:'cover',borderRadius:8,marginBottom:10}}/>}
             <textarea value={capText} onChange={e=>setCapText(e.target.value)} rows={3}
               placeholder="Describe el daño visible en esta fotografía..."
-              style={{width:'100%',background:'#0a0a0f',border:'1px solid #374151',borderRadius:6,padding:'9px 10px',color:'#e5e7eb',fontSize:13,fontFamily:'IBM Plex Mono,monospace',resize:'none',marginBottom:10}}/>
-            <button
-              onMouseDown={speech.start} onMouseUp={speech.stop}
-              onTouchStart={e=>{e.preventDefault();speech.start();}} onTouchEnd={e=>{e.preventDefault();speech.stop();}}
-              className={speech.active?'recBtn':''}
-              style={{width:'100%',padding:'13px',background:speech.active?'#7f1d1d':'#1f2937',border:`2px solid ${speech.active?'#ef4444':'#374151'}`,borderRadius:8,color:speech.active?'#fca5a5':'#9ca3af',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-              🎙️ {speech.active?'DICTANDO... SUELTA PARA PARAR':'MANTÉN PARA DICTAR'}
+              style={{width:'100%',background:'#0a0a0f',border:'1px solid '+(mic.on?'#ef4444':'#374151'),borderRadius:6,padding:'9px 10px',color:'#e5e7eb',fontSize:13,fontFamily:'IBM Plex Mono,monospace',resize:'none',marginBottom:8}}/>
+            <button onClick={mic.toggle} className={mic.on?'micActive':''}
+              style={{width:'100%',padding:'13px',background:mic.on?'#7f1d1d':'#1f2937',border:'2px solid '+(mic.on?'#ef4444':'#374151'),borderRadius:8,color:mic.on?'#fca5a5':'#d1d5db',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',marginBottom:12,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              🎙️ {mic.on?'● ESCUCHANDO — TOCA PARA PARAR':'TOCA PARA DICTAR EL PIE DE FOTO'}
             </button>
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>{speech.stop();setEditId(null);}} style={{flex:1,padding:'10px',background:'#1f2937',border:'1px solid #374151',borderRadius:7,color:'#9ca3af',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>CANCELAR</button>
-              <button onClick={saveCaption} style={{flex:2,padding:'10px',background:'#ea580c',border:'1px solid #ea580c',borderRadius:7,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>✓ GUARDAR PIE DE FOTO</button>
+              <button onClick={()=>{mic.stop();setEditId(null);}} style={{flex:1,padding:'10px',background:'#1f2937',border:'1px solid #374151',borderRadius:7,color:'#d1d5db',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>CANCELAR</button>
+              <button onClick={saveCaption} style={{flex:2,padding:'10px',background:'#ea580c',border:'none',borderRadius:7,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>✓ GUARDAR PIE DE FOTO</button>
             </div>
           </div>
         </div>
       )}
 
       {S.fotos.length===0&&(
-        <div style={{textAlign:'center',padding:'40px 20px',color:'#4b5563'}}>
+        <div style={{textAlign:'center',padding:'40px 20px'}}>
           <div style={{fontSize:48}}>📷</div>
-          <p style={{marginTop:8,fontSize:13}}>Sin fotografías aún</p>
+          <p style={{marginTop:8,fontSize:13,color:'#9ca3af'}}>Sin fotografías aún</p>
         </div>
       )}
 
       {S.fotos.map((f,i)=>(
         <div key={f.id} style={{background:'#0f0f17',border:'1px solid #1f2937',borderRadius:10,overflow:'hidden',marginBottom:12}} className="fadeIn">
-          <div style={{background:'#1f2937',padding:'5px 12px',fontSize:10,color:'#9ca3af',letterSpacing:1,display:'flex',justifyContent:'space-between'}}>
+          <div style={{background:'#1f2937',padding:'5px 12px',fontSize:10,color:'#d1d5db',letterSpacing:1,display:'flex',justifyContent:'space-between'}}>
             <span>FOTO {i+1}</span>
-            <span style={{color:f.caption?'#22c55e':'#6b7280'}}>{f.caption?'✓ CON PIE':'SIN PIE'}</span>
+            <span style={{color:f.caption?'#22c55e':'#9ca3af'}}>{f.caption?'✓ CON PIE':'SIN PIE'}</span>
           </div>
           <img src={f.dataUrl} alt="" style={{width:'100%',maxHeight:220,objectFit:'cover',display:'block'}}/>
-          <div style={{padding:'10px 12px',fontSize:12,color:f.caption?'#d1d5db':'#6b7280',lineHeight:1.5,fontStyle:f.caption?'normal':'italic',borderBottom:'1px solid #1f2937',minHeight:40}}>
-            {f.caption||'Toca "Añadir pie" para describir este daño'}
+          <div style={{padding:'10px 12px',fontSize:12,color:f.caption?'#e5e7eb':'#9ca3af',lineHeight:1.5,fontStyle:f.caption?'normal':'italic',borderBottom:'1px solid #1f2937',minHeight:38}}>
+            {f.caption||'Sin pie de foto'}
           </div>
           <div style={{display:'flex'}}>
             <button onClick={()=>{setEditId(f.id);setCapText(f.caption);}} style={{flex:1,padding:'10px',background:'none',border:'none',color:'#f97316',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',borderRight:'1px solid #1f2937'}}>
               ✏️ {f.caption?'EDITAR PIE':'AÑADIR PIE'}
             </button>
-            <button onClick={()=>delFoto(f.id)} style={{padding:'10px 16px',background:'none',border:'none',color:'#ef4444',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>
-              🗑️
-            </button>
+            <button onClick={()=>setS(s=>({...s,fotos:s.fotos.filter(x=>x.id!==f.id)}))} style={{padding:'10px 16px',background:'none',border:'none',color:'#ef4444',fontSize:11,cursor:'pointer'}}>🗑️</button>
           </div>
         </div>
       ))}
@@ -360,39 +284,23 @@ function TabFotos({S,setS}){
 // TAB NARRACIÓN
 // ════════════════════════════════════════════════════════════════
 function TabNarracion({S,upd}){
-  const onVoice=useCallback(t=>upd('narracion',S.narracion+t),[S.narracion]);
-  const speech=useSpeech(onVoice);
-
   return(
     <div style={{padding:16}} className="fadeIn">
       <Card title="NARRACIÓN DEL SINIESTRO" ico="🎙️">
         <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'8px 12px',marginBottom:14,fontSize:11,color:'#fdba74',lineHeight:1.6}}>
-          💡 Incluye: <b>fecha de ocurrencia</b>, <b>causa del daño</b>, <b>extensión y elementos afectados</b>, y tu <b>criterio sobre cobertura</b>
+          💡 Cada campo tiene su propio 🎙️. Toca una vez para activar, toca de nuevo para parar.<br/>
+          Chrome corrige automáticamente en español de España.
         </div>
-
-        <button
-          onMouseDown={speech.start} onMouseUp={speech.stop}
-          onTouchStart={e=>{e.preventDefault();speech.start();}} onTouchEnd={e=>{e.preventDefault();speech.stop();}}
-          className={speech.active?'recBtn':''}
-          style={{width:'100%',padding:'20px 16px',background:speech.active?'#450a0a':'#1a1a24',border:`2px solid ${speech.active?'#ef4444':'#374151'}`,borderRadius:10,color:speech.active?'#fca5a5':'#9ca3af',fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',display:'flex',flexDirection:'column',alignItems:'center',gap:8,marginBottom:12,transition:'all .2s'}}>
-          <span style={{fontSize:32}}>{speech.active?'⏹️':'🎙️'}</span>
-          <span>{speech.active?'DICTANDO... SUELTA PARA PARAR':'MANTÉN PULSADO PARA DICTAR'}</span>
-          {speech.active&&<span style={{fontSize:11,color:'#f87171',animation:'pulse 1s infinite'}}>● GRABANDO</span>}
-        </button>
-
-        <textarea value={S.narracion} onChange={e=>upd('narracion',e.target.value)} rows={8}
-          placeholder="El dictado irá apareciendo aquí. También puedes escribir directamente..."
-          style={{width:'100%',background:'#0a0a0f',border:'1px solid #374151',borderRadius:7,padding:'10px',color:'#e5e7eb',fontSize:13,fontFamily:'IBM Plex Mono,monospace',resize:'vertical',lineHeight:1.6}}/>
-        <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-          <span style={{fontSize:10,color:'#6b7280'}}>{S.narracion.length} caracteres</span>
-          {S.narracion.length>0&&<button onClick={()=>upd('narracion','')} style={{fontSize:10,color:'#ef4444',background:'none',border:'none',cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>🗑️ Borrar</button>}
-        </div>
+        <Field label="NARRACIÓN COMPLETA DEL SINIESTRO" value={S.narracion} onChange={v=>upd('narracion',v)}
+          placeholder="Dicta o escribe la descripción completa: causa, efecto, extensión de los daños..." multiline rows={7}/>
+        <div style={{fontSize:10,color:'#6b7280',textAlign:'right',marginTop:-6,marginBottom:8}}>{S.narracion.length} caracteres</div>
       </Card>
 
       <Card title="DATOS TÉCNICOS" ico="🔧">
-        <Field label="CAUSA PRINCIPAL" value={S.causa} onChange={v=>upd('causa',v)} placeholder="Ej: Rotura de tubería, incendio, robo..."/>
-        <Field label="ELEMENTOS AFECTADOS" value={S.elementos} onChange={v=>upd('elementos',v)} placeholder="Ej: Solado cocina, mobiliario salón..."/>
-        <Field label="VALORACIÓN ESTIMADA (€)" value={S.valoracion} onChange={v=>upd('valoracion',v)} placeholder="0,00" type="number"/>
+        <Field label="CAUSA PRINCIPAL DEL SINIESTRO" value={S.causa||''} onChange={v=>upd('causa',v)} placeholder="Ej: Rotura de tubería empotrada, incendio fortuito..."/>
+        <Field label="ELEMENTOS AFECTADOS" value={S.elementos||''} onChange={v=>upd('elementos',v)} placeholder="Ej: Solado cocina, tabique salón, mobiliario..."/>
+        <Field label="VALORACIÓN ESTIMADA DE DAÑOS (€)" value={S.valoracion||''} onChange={v=>upd('valoracion',v)} placeholder="0,00" type="number"/>
+        <Field label="OBSERVACIONES Y NOTAS ADICIONALES" value={S.notas||''} onChange={v=>upd('notas',v)} placeholder="Cualquier observación relevante..." multiline rows={2}/>
       </Card>
     </div>
   );
@@ -404,6 +312,7 @@ function TabNarracion({S,upd}){
 function TabCatastro({S,setS,addLog}){
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState('');
+  const [copiedField,setCopiedField]=useState('');
 
   const geolocate=async()=>{
     setLoading(true);setErr('');
@@ -411,135 +320,112 @@ function TabCatastro({S,setS,addLog}){
       const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:15000}));
       const{latitude:lat,longitude:lon,accuracy}=pos.coords;
       setS(s=>({...s,gps:{lat,lon,accuracy}}));
-      addLog('GPS obtenido: '+lat.toFixed(6)+', '+lon.toFixed(6)+' (±'+Math.round(accuracy)+'m)');
-      if(accuracy>100) addLog('⚠️ Precisión '+Math.round(accuracy)+'m. Sal al exterior para mejorarla.','error');
-      else addLog('✓ Precisión OK. Abre el mapa para identificar la parcela.','success');
+      addLog('GPS: '+lat.toFixed(6)+', '+lon.toFixed(6)+' (±'+Math.round(accuracy)+'m)');
+      if(accuracy>100) addLog('⚠️ Precisión baja. Sal al exterior e intenta de nuevo.','error');
+      else addLog('✓ Precisión OK (±'+Math.round(accuracy)+'m)','success');
     }catch(e){
-      setErr(e.code===1?'Permiso de ubicación denegado. Ve a Ajustes > Chrome > Ubicación y actívalo.':e.message||'Error GPS');
-      addLog('Error GPS: '+e.message,'error');
+      const msg=e.code===1?'Permiso denegado. Activa la ubicación en Ajustes de Chrome.':e.message;
+      setErr(msg);addLog('Error: '+msg,'error');
     }
     setLoading(false);
   };
 
-  const [copied,setCopied]=useState(false);
-
-  const abrirCatastro=async()=>{
-    if(!S.gps){ alert('Primero obtén tu posición GPS (Paso 1)'); return; }
-    var lat=S.gps.lat.toFixed(6);
-    var lon=S.gps.lon.toFixed(6);
-    // Copiar coordenadas al portapapeles
+  const copiar=async(campo,valor)=>{
     try{
-      await navigator.clipboard.writeText(lat+', '+lon);
-      setCopied(true);
-      setTimeout(()=>setCopied(false),5000);
+      await navigator.clipboard.writeText(String(valor));
+      setCopiedField(campo);
+      setTimeout(()=>setCopiedField(''),3000);
     }catch(e){}
-    window.open('https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx','_blank');
   };
-
 
   const setRC=v=>{
-    setS(s=>({...s,rcManual:v,catastro:v?{rc:v,direccion:'Referencia introducida manualmente por el perito',manual:true}:null}));
+    setS(s=>({...s,rcManual:v.toUpperCase(),catastro:v?{rc:v.toUpperCase(),direccion:'Referencia catastral introducida manualmente',manual:true}:null}));
   };
 
-  const rcOk=S.catastro&&S.catastro.rc&&S.catastro.rc!=='No encontrada';
+  const rcOk=S.catastro&&S.catastro.rc&&S.catastro.rc.length>=7;
 
   return(
-    <div style={{padding:16}}>
+    <div style={{padding:16}} className="fadeIn">
 
-      {/* PASO 1: GPS */}
-      <Card title="PASO 1 — OBTENER POSICIÓN GPS" ico="📍">
-        {!S.gps&&!loading&&(
-          <Btn full onClick={geolocate}>📍 OBTENER MI POSICIÓN GPS</Btn>
-        )}
+      <Card title="PASO 1 — POSICIÓN GPS" ico="📍">
+        {!S.gps&&!loading&&<Btn full onClick={geolocate}>📍 OBTENER MI POSICIÓN GPS</Btn>}
         {loading&&(
           <div style={{display:'flex',alignItems:'center',gap:14,background:'#0a0a0f',border:'1px solid #374151',borderRadius:8,padding:16}}>
             <div style={{width:26,height:26,borderRadius:'50%',border:'3px solid #374151',borderTopColor:'#f97316',flexShrink:0,animation:'spin .8s linear infinite'}}/>
             <span style={{color:'#f97316',fontWeight:700,fontSize:13}}>Obteniendo GPS...</span>
           </div>
         )}
-        {err&&(
-          <div style={{background:'#450a0a',border:'1px solid #dc2626',borderRadius:7,padding:'10px 12px',fontSize:12,color:'#fca5a5',lineHeight:1.6}}>
-            ⚠️ {err}
-          </div>
-        )}
+        {err&&<div style={{background:'#450a0a',border:'1px solid #dc2626',borderRadius:7,padding:'10px 12px',fontSize:12,color:'#fca5a5',lineHeight:1.6,marginTop:8}}>⚠️ {err}</div>}
+
         {S.gps&&(
           <div style={{background:'#052e16',border:'1px solid #16a34a',borderRadius:8,padding:12}}>
-            <div style={{fontSize:10,fontWeight:700,color:'#86efac',letterSpacing:1,marginBottom:8}}>✓ POSICIÓN OBTENIDA</div>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-              <span style={{fontSize:11,color:'#6b7280'}}>Latitud</span>
-              <span style={{fontSize:12,color:'#e5e7eb',fontWeight:700}}>{S.gps.lat.toFixed(6)}°</span>
+            <div style={{fontSize:10,fontWeight:700,color:'#86efac',letterSpacing:1,marginBottom:10}}>✓ POSICIÓN OBTENIDA — Copia cada coordenada por separado</div>
+
+            {/* LATITUD */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#0a0a0f',borderRadius:6,padding:'10px 12px',marginBottom:8}}>
+              <div>
+                <div style={{fontSize:9,color:'#9ca3af',letterSpacing:1,marginBottom:3}}>LATITUD (pegar primero en Catastro)</div>
+                <div style={{fontSize:17,fontWeight:700,color:'#f97316',fontFamily:'monospace',letterSpacing:1}}>{S.gps.lat.toFixed(6)}</div>
+              </div>
+              <button onClick={()=>copiar('lat',S.gps.lat.toFixed(6))} style={{padding:'8px 12px',background:copiedField==='lat'?'#052e16':'#1f2937',border:'1px solid '+(copiedField==='lat'?'#16a34a':'#374151'),borderRadius:6,color:copiedField==='lat'?'#86efac':'#d1d5db',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',flexShrink:0}}>
+                {copiedField==='lat'?'✓ COPIADA':'📋 COPIAR'}
+              </button>
             </div>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-              <span style={{fontSize:11,color:'#6b7280'}}>Longitud</span>
-              <span style={{fontSize:12,color:'#e5e7eb',fontWeight:700}}>{S.gps.lon.toFixed(6)}°</span>
+
+            {/* LONGITUD */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',background:'#0a0a0f',borderRadius:6,padding:'10px 12px',marginBottom:10}}>
+              <div>
+                <div style={{fontSize:9,color:'#9ca3af',letterSpacing:1,marginBottom:3}}>LONGITUD (pegar después en Catastro)</div>
+                <div style={{fontSize:17,fontWeight:700,color:'#f97316',fontFamily:'monospace',letterSpacing:1}}>{S.gps.lon.toFixed(6)}</div>
+              </div>
+              <button onClick={()=>copiar('lon',S.gps.lon.toFixed(6))} style={{padding:'8px 12px',background:copiedField==='lon'?'#052e16':'#1f2937',border:'1px solid '+(copiedField==='lon'?'#16a34a':'#374151'),borderRadius:6,color:copiedField==='lon'?'#86efac':'#d1d5db',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace',flexShrink:0}}>
+                {copiedField==='lon'?'✓ COPIADA':'📋 COPIAR'}
+              </button>
             </div>
-            <div style={{display:'flex',justifyContent:'space-between'}}>
-              <span style={{fontSize:11,color:'#6b7280'}}>Precisión</span>
-              <span style={{fontSize:12,color:S.gps.accuracy>100?'#fca5a5':'#86efac',fontWeight:700}}>±{Math.round(S.gps.accuracy)}m {S.gps.accuracy>100?'⚠️':'✓'}</span>
+
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:11,color:S.gps.accuracy>100?'#fca5a5':'#86efac'}}>Precisión: ±{Math.round(S.gps.accuracy)}m {S.gps.accuracy>100?'⚠️':'✓'}</span>
+              <button onClick={geolocate} style={{padding:'5px 10px',background:'none',border:'1px solid #374151',borderRadius:5,color:'#9ca3af',fontSize:10,cursor:'pointer',fontFamily:'IBM Plex Mono,monospace'}}>↺ Repetir</button>
             </div>
-            <button onClick={geolocate} style={{width:'100%',marginTop:10,padding:'7px',background:'none',border:'1px solid #374151',borderRadius:6,color:'#9ca3af',fontSize:11,cursor:'pointer',fontFamily:'monospace'}}>
-              ↺ Repetir localización
-            </button>
           </div>
         )}
       </Card>
 
-      {/* PASO 2: ABRIR CATASTRO CENTRADO */}
-      <Card title="PASO 2 — IDENTIFICAR PARCELA EN CATASTRO" ico="🗺️">
-        <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'10px 12px',marginBottom:12,fontSize:12,color:'#fdba74',lineHeight:1.7}}>
-          <b>Flujo de trabajo:</b><br/>
-          1️⃣ Pulsa el botón naranja → <b>las coordenadas se copian solas al portapapeles</b> y se abre el Catastro<br/>
-          2️⃣ En el Catastro selecciona la pestaña <b>"Coordenadas"</b><br/>
-          3️⃣ Pega las coordenadas con <b>mantener pulsado → Pegar</b><br/>
-          4️⃣ Pulsa <b>"Buscar"</b> → toca la parcela correcta<br/>
-          5️⃣ Copia la <b>Referencia Catastral</b> y vuelve aquí al Paso 3
+      <Card title="PASO 2 — BUSCAR PARCELA EN CATASTRO" ico="🗺️">
+        <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'10px 12px',marginBottom:12,fontSize:11,color:'#fdba74',lineHeight:1.8}}>
+          1️⃣ Copia la <b>Latitud</b> (botón del Paso 1) → ábrela en Catastro<br/>
+          2️⃣ Selecciona pestaña <b>"Coordenadas"</b> → pega en campo <b>Latitud</b><br/>
+          3️⃣ Vuelve aquí, copia la <b>Longitud</b> → pégala en Catastro<br/>
+          4️⃣ Pulsa <b>"Buscar"</b> → identifica y toca la parcela correcta<br/>
+          5️⃣ Copia la <b>RC</b> → vuelve aquí (botón ← atrás) → Paso 3
         </div>
-        {S.gps&&(
-          <div style={{background:'#1f2937',border:'1px solid #374151',borderRadius:8,padding:12,marginBottom:10,textAlign:'center'}}>
-            <div style={{fontSize:10,color:'#6b7280',letterSpacing:1,marginBottom:4}}>COORDENADAS A PEGAR EN CATASTRO</div>
-            <div style={{fontSize:15,fontWeight:700,color:'#f97316',letterSpacing:1,fontFamily:'monospace'}}>
-              {S.gps.lat.toFixed(6)}, {S.gps.lon.toFixed(6)}
-            </div>
-            {copied&&<div style={{fontSize:11,color:'#86efac',marginTop:4}}>✓ Copiadas al portapapeles</div>}
-          </div>
-        )}
-        <Btn full onClick={abrirCatastro}>
-          {copied?'✓ COORDENADAS COPIADAS — ABRIENDO CATASTRO':'🗺️ COPIAR COORDS Y ABRIR CATASTRO'}
-        </Btn>
-        {!S.gps&&<p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:6}}>Primero obtén tu posición GPS (Paso 1)</p>}
+        <a href="https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx" target="_blank" rel="noreferrer"
+          style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,width:'100%',padding:'12px',background:'#ea580c',border:'none',borderRadius:7,color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',fontFamily:'IBM Plex Mono,monospace',marginTop:4}}>
+          🗺️ ABRIR SEDE ELECTRÓNICA DEL CATASTRO
+        </a>
       </Card>
 
-      {/* PASO 3: INTRODUCIR RC */}
-      <Card title="PASO 3 — INTRODUCIR REFERENCIA CATASTRAL" ico="🏛️">
-        <div style={{fontSize:10,color:'#6b7280',letterSpacing:1,marginBottom:6}}>REFERENCIA CATASTRAL (20 caracteres)</div>
-        <input
-          value={S.rcManual||''}
-          onChange={e=>setRC(e.target.value.toUpperCase())}
-          placeholder="Ej: 9872023VH5797S0001WX"
-          maxLength={20}
-          style={{width:'100%',background:'#0a0a0f',border:'2px solid '+(rcOk?'#16a34a':'#f97316'),borderRadius:8,padding:'12px 14px',color:'#f97316',fontSize:16,fontFamily:'monospace',letterSpacing:2,textAlign:'center',marginBottom:10}}
-        />
-        {rcOk&&(
+      <Card title="PASO 3 — PEGAR REFERENCIA CATASTRAL" ico="🏛️">
+        <div style={{fontSize:11,fontWeight:600,color:'#d1d5db',letterSpacing:1,marginBottom:6}}>REFERENCIA CATASTRAL (20 caracteres)</div>
+        <input value={S.rcManual||''} onChange={e=>setRC(e.target.value)} placeholder="Ej: 9872023VH5797S0001WX" maxLength={20}
+          style={{width:'100%',background:'#0a0a0f',border:'2px solid '+(rcOk?'#16a34a':'#f97316'),borderRadius:8,padding:'12px 14px',color:'#f97316',fontSize:15,fontFamily:'monospace',letterSpacing:2,textAlign:'center',marginBottom:10}}/>
+        {rcOk?(
           <div style={{background:'#052e16',border:'1px solid #16a34a',borderRadius:8,padding:12,textAlign:'center'}}>
-            <div style={{fontSize:22,fontWeight:700,color:'#86efac',letterSpacing:3,marginBottom:4}}>{S.catastro.rc}</div>
-            <div style={{fontSize:12,color:'#86efac'}}>✓ Referencia catastral confirmada</div>
+            <div style={{fontSize:20,fontWeight:700,color:'#86efac',letterSpacing:3,marginBottom:4}}>{S.catastro.rc}</div>
+            <div style={{fontSize:12,color:'#86efac',marginBottom:8}}>✓ Referencia catastral confirmada</div>
             <a href={'https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?del=&mun=&rc1='+S.catastro.rc.substring(0,7)+'&rc2='+S.catastro.rc.substring(7,14)}
-               target="_blank" rel="noreferrer"
-               style={{display:'block',fontSize:11,color:'#60a5fa',marginTop:8,textDecoration:'none'}}>
+               target="_blank" rel="noreferrer" style={{fontSize:11,color:'#60a5fa',textDecoration:'none'}}>
               🔗 Ver ficha catastral completa →
             </a>
           </div>
-        )}
-        {!rcOk&&(
-          <p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:4}}>
-            La RC son 20 caracteres. Cópiala exactamente del mapa del Catastro.
-          </p>
+        ):(
+          <p style={{fontSize:11,color:'#9ca3af',textAlign:'center'}}>Copia los 20 caracteres exactos del mapa del Catastro</p>
         )}
       </Card>
 
       {S.log.length>0&&(
-        <Card title="LOG DE ACTIVIDAD" ico="📝">
-          <div style={{background:'#0a0a0f',borderRadius:6,padding:10,maxHeight:120,overflowY:'auto'}}>
+        <Card title="LOG" ico="📝">
+          <div style={{background:'#0a0a0f',borderRadius:6,padding:10,maxHeight:100,overflowY:'auto'}}>
             {S.log.map((l,i)=>(
               <div key={i} style={{fontSize:11,marginBottom:3,color:l.type==='error'?'#fca5a5':l.type==='success'?'#86efac':'#9ca3af'}}>
                 <span style={{color:'#4b5563'}}>{l.t} </span>{l.msg}
@@ -552,61 +438,73 @@ function TabCatastro({S,setS,addLog}){
   );
 }
 
-
 // ════════════════════════════════════════════════════════════════
 // TAB ENVÍO
 // ════════════════════════════════════════════════════════════════
 function TabEnvio({S,setS,addLog}){
   const [phase,setPhase]=useState('idle');
   const [detail,setDetail]=useState('');
+  const esDemo=MAKE_WEBHOOK.includes('TU_WEBHOOK');
 
   const issues=[];
-  if(!S.poliza)issues.push('Nº de póliza vacío');
-  if(!S.asegurado)issues.push('Nombre del asegurado vacío');
-  if(!S.perito)issues.push('Nombre del perito vacío');
-  if(S.fotos.length===0)issues.push('Sin fotografías');
-  if(S.narracion.length<20)issues.push('Narración demasiado corta (mín. 20 caracteres)');
-  if(!S.catastro)issues.push('Sin referencia catastral');
+  if(!S.poliza) issues.push('Nº de póliza vacío');
+  if(!S.asegurado) issues.push('Asegurado vacío');
+  if(!S.perito) issues.push('Perito vacío');
+  if(S.fotos.length===0) issues.push('Sin fotografías');
+  if(S.narracion.length<20) issues.push('Narración muy corta');
+  if(!S.catastro) issues.push('Sin referencia catastral');
 
   const enviar=async()=>{
-    setPhase('packaging');setDetail('Preparando paquete de datos...');
-    await delay(600);
-    setPhase('uploading');setDetail('Conectando con Make.com...');
-    addLog('Enviando payload al webhook de Make');
-
+    if(esDemo){setPhase('demo');return;}
+    setPhase('sending');setDetail('Conectando con Make.com...');
     const payload={
-      expediente:{id:S.id,poliza:S.poliza,asegurado:S.asegurado,perito:S.perito,fecha_siniestro:S.fecha,hora_siniestro:S.hora,fecha_inspeccion:fmtDate(),cobertura:S.cobertura,motivo_cobertura:S.motivoCob,causa:S.causa,elementos_afectados:S.elementos,valoracion_estimada:S.valoracion||'0'},
+      expediente:{id:S.id,poliza:S.poliza,asegurado:S.asegurado,perito:S.perito,
+        fecha_siniestro:S.fechaSiniestro,fecha_visita:S.fechaVisita,hora_visita:S.horaVisita,
+        expediente_cia:S.expCia,cobertura:S.cobertura,motivo_cobertura:S.motivoCob,
+        causa:S.causa,elementos:S.elementos,valoracion:S.valoracion,notas:S.notas},
       narracion:S.narracion,gps:S.gps,catastro:S.catastro,
       fotos:S.fotos.map(f=>({id:f.id,caption:f.caption,dataUrl:f.dataUrl})),
-      metadata:{timestamp:new Date().toISOString(),carpeta_destino:`peritos-siniestros/${S.poliza}/${S.id}`}
+      metadata:{timestamp:new Date().toISOString(),carpeta:'peritos/'+S.poliza+'/'+S.id}
     };
-
     try{
       const res=await fetch(MAKE_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      if(!res.ok)throw new Error(`HTTP ${res.status}`);
-      setPhase('done');setDetail('✅ Make.com recibió el expediente correctamente.');
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      setPhase('done');
       setS(s=>({...s,estado:'completado'}));
-      addLog('Flujo Make completado. Telegram enviado.','success');
+      addLog('Enviado correctamente a Make.com','success');
     }catch(e){
-      if(MAKE_WEBHOOK.includes('TU_WEBHOOK')||e.message.includes('fetch')){
-        setPhase('done');setDetail('🟡 MODO DEMO activo. Configura MAKE_WEBHOOK para activar el envío real.');
-        setS(s=>({...s,estado:'completado'}));
-        addLog('Demo: payload preparado correctamente (100% válido para Make)','success');
-      }else{
-        setPhase('error');setDetail('Error: '+e.message);
-        setS(s=>({...s,estado:'error'}));
-        addLog('Error: '+e.message,'error');
-      }
+      setPhase('error');setDetail(e.message);
+      setS(s=>({...s,estado:'error'}));
+      addLog('Error: '+e.message,'error');
     }
   };
 
   return(
     <div style={{padding:16}} className="fadeIn">
+
+      {/* AVISO DEMO */}
+      {esDemo&&(
+        <div style={{background:'#431407',border:'2px solid #ea580c',borderRadius:10,padding:16,marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:700,color:'#fdba74',marginBottom:10}}>⚠️ SIN WEBHOOK — MODO DEMO ACTIVO</div>
+          <div style={{fontSize:12,color:'#fed7aa',lineHeight:1.8}}>
+            La app está <b>100% funcional</b> pero el envío a Make está desactivado porque no hay webhook configurado. Así es como se explica lo que viste antes: la app simuló el éxito para que pudieras probar el flujo completo.<br/><br/>
+            <b>Para activar el envío real a Make:</b><br/>
+            1️⃣ Entra en <b>make.com</b> → crea un escenario nuevo<br/>
+            2️⃣ Añade módulo <b>Webhooks → Custom Webhook</b><br/>
+            3️⃣ Copia la URL que genera Make (formato: hook.eu1.make.com/xxxxx)<br/>
+            4️⃣ Abre el archivo <b>index.html</b> en un editor de texto<br/>
+            5️⃣ En la línea 7, cambia <b>TU_WEBHOOK_AQUI</b> por tu URL real<br/>
+            6️⃣ Sube el archivo actualizado a GitHub<br/><br/>
+            <span style={{color:'#f97316',fontWeight:700}}>Cuando lo hayas hecho, el botón de envío funcionará de verdad.</span>
+          </div>
+        </div>
+      )}
+
       <Card title="RESUMEN DEL EXPEDIENTE" ico="📋">
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {[['Póliza',S.poliza||'—'],['Asegurado',S.asegurado||'—'],['Perito',S.perito||'—'],['Fotos',S.fotos.length+' fotos'],['Narración',S.narracion.length+' chars'],['Catastro',S.catastro?.rc||'Sin datos'],['Cobertura',(S.cobertura||'—').toUpperCase()]].map(([k,v])=>(
+          {[['Póliza',S.poliza||'—'],['Asegurado',S.asegurado||'—'],['Perito',S.perito||'—'],['F.Siniestro',S.fechaSiniestro||'—'],['F.Visita',S.fechaVisita||'—'],['Fotos',S.fotos.length+' fotos'],['Narración',S.narracion.length+' chars'],['Catastro',S.catastro?.rc||'—'],['Cobertura',(S.cobertura||'—').toUpperCase()]].map(([k,v])=>(
             <div key={k} style={{background:'#0a0a0f',border:'1px solid #1f2937',borderRadius:7,padding:'8px 10px'}}>
-              <div style={{fontSize:9,color:'#6b7280',letterSpacing:1,marginBottom:2}}>{k}</div>
+              <div style={{fontSize:9,color:'#9ca3af',letterSpacing:1,marginBottom:2}}>{k}</div>
               <div style={{fontSize:12,color:'#e5e7eb',fontWeight:600,wordBreak:'break-all'}}>{v}</div>
             </div>
           ))}
@@ -614,66 +512,121 @@ function TabEnvio({S,setS,addLog}){
       </Card>
 
       {issues.length>0&&(
-        <Card title="PENDIENTE ANTES DE ENVIAR" ico="⚠️">
-          {issues.map((iss,i)=>(
-            <div key={i} style={{display:'flex',alignItems:'center',gap:8,fontSize:12,color:'#fcd34d',marginBottom:6}}>
-              ⚠️ {iss}
-            </div>
-          ))}
+        <Card title="PENDIENTE" ico="⚠️">
+          {issues.map((iss,i)=><div key={i} style={{fontSize:12,color:'#fcd34d',marginBottom:6}}>⚠️ {iss}</div>)}
         </Card>
       )}
 
-      <Card title="FLUJO MAKE.COM" ico="⚙️">
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:0}}>
-          {[['📱','PeritoApp','Fotos + narración + catastro'],['🔗','Webhook Make','Recibe JSON completo'],['☁️','Google Drive','Sube fotos y catastro'],['🌐','Web Aseguradora','Rellena el formulario online'],['🤖','GPT-4o','Genera el cuerpo del informe'],['💾','Guarda informe','En la plataforma de la aseguradora'],['📬','Telegram','Notifica al perito ✓']].map(([ico,title,desc],i,arr)=>(
-            <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',width:'100%'}}>
-              <div style={{display:'flex',alignItems:'center',gap:10,background:'#0a0a0f',border:'1px solid #1f2937',borderRadius:8,padding:'8px 14px',width:'100%'}}>
-                <span style={{fontSize:20,flexShrink:0}}>{ico}</span>
-                <div>
-                  <div style={{fontSize:12,fontWeight:700,color:'#f97316'}}>{title}</div>
-                  <div style={{fontSize:11,color:'#6b7280'}}>{desc}</div>
-                </div>
-              </div>
-              {i<arr.length-1&&<div style={{fontSize:16,color:'#374151',lineHeight:1.2}}>↓</div>}
+      <Card title="FLUJO AUTOMÁTICO MAKE.COM" ico="⚙️">
+        {[['📱','PeritoApp','Fotos + narración + GPS + catastro'],['🔗','Webhook','Recibe el expediente completo en JSON'],['☁️','Google Drive','Sube fotos y ficha catastral'],['🌐','Web Aseguradora','Accede y rellena el formulario online'],['🤖','GPT-4o','Redacta el cuerpo del informe pericial'],['💾','Guarda informe','Lo guarda en la plataforma de la cía.'],['📬','Telegram','Notifica al perito: todo completado ✓']].map(([ico,t,d],i,arr)=>(
+          <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,background:'#0a0a0f',border:'1px solid #1f2937',borderRadius:8,padding:'8px 14px',width:'100%'}}>
+              <span style={{fontSize:18,flexShrink:0}}>{ico}</span>
+              <div><div style={{fontSize:12,fontWeight:700,color:'#f97316'}}>{t}</div><div style={{fontSize:11,color:'#9ca3af'}}>{d}</div></div>
             </div>
-          ))}
-        </div>
+            {i<arr.length-1&&<div style={{fontSize:14,color:'#374151',lineHeight:1.4}}>↓</div>}
+          </div>
+        ))}
       </Card>
 
-      {phase!=='idle'&&phase!=='error'&&(
-        <Card title="ESTADO DEL ENVÍO" ico="📡">
-          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
-            {(phase==='packaging'||phase==='uploading')&&<div style={{width:24,height:24,borderRadius:'50%',border:'3px solid #374151',borderTopColor:'#f97316',flexShrink:0}} className="spin"/>}
-            {phase==='done'&&<span style={{fontSize:24}}>✅</span>}
-            <div>
-              <div style={{fontSize:13,fontWeight:700,color:phase==='done'?'#22c55e':'#f97316',letterSpacing:.5}}>
-                {phase==='packaging'?'EMPAQUETANDO':phase==='uploading'?'ENVIANDO A MAKE':'COMPLETADO'}
-              </div>
-              <div style={{fontSize:11,color:'#9ca3af',marginTop:2}}>{detail}</div>
-            </div>
-          </div>
-          {phase==='done'&&(
-            <div style={{background:'#052e16',border:'1px solid #166534',borderRadius:8,padding:16,textAlign:'center'}}>
-              <div style={{fontSize:36}}>🎉</div>
-              <div style={{color:'#86efac',fontWeight:700,fontSize:15,marginTop:6}}>EXPEDIENTE ENVIADO</div>
-              <div style={{color:'#6b7280',fontSize:12,marginTop:6,lineHeight:1.6}}>Recibirás confirmación por Telegram cuando Make haya subido las fotos, rellenado el informe y lo haya guardado</div>
-            </div>
-          )}
-        </Card>
+      {phase==='demo'&&(
+        <div style={{background:'#431407',border:'1px solid #ea580c',borderRadius:8,padding:14,textAlign:'center',marginBottom:10}}>
+          <div style={{fontSize:24}}>⚙️</div>
+          <div style={{color:'#fdba74',fontWeight:700,fontSize:13,marginTop:6}}>CONFIGURA EL WEBHOOK PRIMERO</div>
+          <div style={{color:'#fed7aa',fontSize:12,marginTop:4}}>Sigue las instrucciones del aviso naranja de arriba</div>
+        </div>
+      )}
+      {phase==='sending'&&(
+        <div style={{display:'flex',alignItems:'center',gap:12,background:'#0f0f17',border:'1px solid #374151',borderRadius:8,padding:14,marginBottom:10}}>
+          <div style={{width:24,height:24,borderRadius:'50%',border:'3px solid #374151',borderTopColor:'#f97316',flexShrink:0,animation:'spin .8s linear infinite'}}/>
+          <div><div style={{fontSize:13,fontWeight:700,color:'#f97316'}}>ENVIANDO A MAKE...</div><div style={{fontSize:11,color:'#9ca3af',marginTop:2}}>{detail}</div></div>
+        </div>
+      )}
+      {phase==='done'&&(
+        <div style={{background:'#052e16',border:'1px solid #166534',borderRadius:8,padding:16,textAlign:'center',marginBottom:10}}>
+          <div style={{fontSize:36}}>🎉</div>
+          <div style={{color:'#86efac',fontWeight:700,fontSize:15,marginTop:6}}>EXPEDIENTE ENVIADO A MAKE.COM</div>
+          <div style={{color:'#d1d5db',fontSize:12,marginTop:6,lineHeight:1.6}}>Make está procesando el flujo automático.<br/>Recibirás un Telegram cuando el informe esté guardado en la plataforma.</div>
+        </div>
+      )}
+      {phase==='error'&&(
+        <div style={{background:'#450a0a',border:'1px solid #dc2626',borderRadius:8,padding:14,marginBottom:10}}>
+          <div style={{color:'#fca5a5',fontWeight:700}}>ERROR DE ENVÍO</div>
+          <div style={{color:'#fca5a5',fontSize:12,marginTop:4}}>{detail}</div>
+        </div>
       )}
 
-      {(phase==='idle'||phase==='error')&&(
-        <Btn full onClick={enviar} disabled={issues.length>0}>
-          {phase==='error'?'↺ REINTENTAR ENVÍO':'🚀 ENVIAR INFORME A MAKE.COM'}
+      {(phase==='idle'||phase==='demo'||phase==='error')&&(
+        <Btn full onClick={enviar} disabled={issues.length>0&&!esDemo}>
+          {esDemo?'⚙️ VER CONFIGURACIÓN WEBHOOK':phase==='error'?'↺ REINTENTAR':'🚀 ENVIAR EXPEDIENTE A MAKE.COM'}
         </Btn>
       )}
-
-      {issues.length>0&&<p style={{fontSize:11,color:'#6b7280',textAlign:'center',marginTop:8}}>Completa los apartados pendientes antes de enviar</p>}
+      {phase==='done'&&<Btn full secondary onClick={()=>setPhase('idle')}>↺ Nuevo expediente</Btn>}
     </div>
   );
 }
 
-// ── RENDER ─────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+// APP ROOT
+// ════════════════════════════════════════════════════════════════
+function App(){
+  const [tab,setTab]=useState('datos');
+  const [S,setS]=useState({
+    id:uid(),poliza:'',asegurado:'',perito:'',
+    fechaSiniestro:'',fechaVisita:fmtDate(),horaVisita:fmtTime(),expCia:'',
+    fotos:[],narracion:'',causa:'',elementos:'',valoracion:'',notas:'',
+    cobertura:'',motivoCob:'',
+    catastro:null,gps:null,rcManual:'',
+    estado:'borrador',log:[]
+  });
+  const upd=(k,v)=>setS(s=>({...s,[k]:v}));
+  const addLog=(msg,type='info')=>setS(s=>({...s,log:[...s.log,{msg,type,t:fmtTime()}]}));
+
+  const prog=[
+    {l:'Datos básicos (póliza, asegurado, perito)',ok:!!(S.poliza&&S.asegurado&&S.perito)},
+    {l:'Fotografías del siniestro',ok:S.fotos.length>0},
+    {l:'Narración del siniestro',ok:S.narracion.length>20},
+    {l:'Referencia catastral',ok:!!(S.catastro&&S.catastro.rc)},
+  ];
+  const pct=Math.round(prog.filter(p=>p.ok).length/prog.length*100);
+  const stateColor={borrador:'#f59e0b',subiendo:'#3b82f6',completado:'#22c55e',error:'#ef4444'};
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',minHeight:'100vh',background:'#0a0a0f',fontFamily:'IBM Plex Mono,monospace',color:'#e5e7eb'}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
+
+      <div style={{background:'#0f0f17',borderBottom:'1px solid #1f2937',padding:'10px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,zIndex:50}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:20}}>🛡️</span>
+          <span style={{fontWeight:700,fontSize:15,letterSpacing:2,color:'#f97316'}}>PERITOAPP</span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{background:stateColor[S.estado],borderRadius:4,padding:'2px 7px',fontSize:10,fontWeight:700,color:'#000'}}>{S.estado.toUpperCase()}</span>
+          <span style={{fontSize:10,color:'#6b7280'}}>#{S.id.toUpperCase()}</span>
+        </div>
+      </div>
+
+      <div style={{flex:1,overflowY:'auto',paddingBottom:72}}>
+        {tab==='datos'    &&<TabDatos     S={S} upd={upd} pct={pct} prog={prog} setTab={setTab}/>}
+        {tab==='fotos'    &&<TabFotos     S={S} setS={setS}/>}
+        {tab==='narracion'&&<TabNarracion S={S} upd={upd}/>}
+        {tab==='catastro' &&<TabCatastro  S={S} setS={setS} addLog={addLog}/>}
+        {tab==='envio'    &&<TabEnvio     S={S} setS={setS} addLog={addLog}/>}
+      </div>
+
+      <div style={{position:'fixed',bottom:0,left:0,right:0,background:'#0f0f17',borderTop:'1px solid #1f2937',display:'flex',zIndex:50}}>
+        {[{id:'datos',ico:'📋',label:'Datos'},{id:'fotos',ico:'📷',label:'Fotos',badge:S.fotos.length},{id:'narracion',ico:'🎙️',label:'Narración'},{id:'catastro',ico:'🏛️',label:'Catastro'},{id:'envio',ico:'🚀',label:'Enviar'}].map(it=>(
+          <button key={it.id} onClick={()=>setTab(it.id)} style={{flex:1,background:tab===it.id?'#1a1a24':'none',border:'none',cursor:'pointer',padding:'8px 2px',display:'flex',flexDirection:'column',alignItems:'center',gap:2,position:'relative'}}>
+            <span style={{fontSize:18}}>{it.ico}</span>
+            {it.badge>0&&<span style={{position:'absolute',top:4,right:'18%',background:'#ef4444',color:'#fff',borderRadius:'50%',width:14,height:14,fontSize:9,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>{it.badge}</span>}
+            <span style={{fontSize:9,color:tab===it.id?'#f97316':'#9ca3af',fontWeight:tab===it.id?700:400}}>{it.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
