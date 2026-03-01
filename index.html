@@ -423,7 +423,10 @@ function TabCatastro({S,setS,addLog}){
 
   const abrirCatastro=()=>{
     if(!S.gps){ alert('Primero obtén tu posición GPS'); return; }
-    const url='https://www1.sedecatastro.gob.es/Cartografia/mapa.aspx?buscar=S&latitud='+S.gps.lat+'&longitud='+S.gps.lon;
+    // URL que abre directamente el buscador por coordenadas con los datos pre-rellenos
+    var lat=S.gps.lat.toFixed(6);
+    var lon=S.gps.lon.toFixed(6);
+    var url='https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx?tipo=coordenadas&latitud='+lat+'&longitud='+lon+'&SRS=EPSG%3A4326&huso=0';
     window.open(url,'_blank');
   };
 
@@ -478,10 +481,11 @@ function TabCatastro({S,setS,addLog}){
       <Card title="PASO 2 — IDENTIFICAR PARCELA EN CATASTRO" ico="🗺️">
         <div style={{background:'#1a110a',border:'1px solid #78350f',borderRadius:7,padding:'10px 12px',marginBottom:12,fontSize:12,color:'#fdba74',lineHeight:1.7}}>
           <b>Flujo de trabajo:</b><br/>
-          1️⃣ Pulsa el botón naranja → se abre el mapa del Catastro centrado en tu posición GPS<br/>
-          2️⃣ Toca sobre la <b>parcela correcta</b> del inmueble siniestrado<br/>
-          3️⃣ Copia la <b>Referencia Catastral</b> que aparece<br/>
-          4️⃣ Vuelve aquí y pégala en el campo de abajo
+          1️⃣ Pulsa el botón naranja → el Catastro se abre con tus coordenadas GPS ya introducidas<br/>
+          2️⃣ Pulsa <b>"Buscar"</b> en la web del Catastro → verás las parcelas de tu zona<br/>
+          3️⃣ Identifica y toca la <b>parcela correcta</b> del inmueble siniestrado<br/>
+          4️⃣ Copia la <b>Referencia Catastral</b> (20 caracteres)<br/>
+          5️⃣ Vuelve aquí y pégala en el Paso 3
         </div>
         <Btn full onClick={abrirCatastro}>
           🗺️ ABRIR MAPA CATASTRO EN MI POSICIÓN
