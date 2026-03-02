@@ -135,56 +135,122 @@ function spanishToNum(text){
 }
 
 // ════════ MIC HOOK ═══════════════════════════════════════════════
+// ── CLAVE DEL FUNCIONAMIENTO CORRECTO ─────────────────────────────
+// Nunca reiniciamos la misma instancia SR (eso reenvía resultados ya
+// procesados y genera duplicados). Si Chrome para inesperadamente,
+// creamos una NUEVA instancia y acumulamos el texto en un ref externo.
+// El texto sólo se entrega a onFinish cuando el usuario pulsa Parar.
 function useMic({onFinish,isNumber=false,onFinObs=null}){
-  const ref=useRef(null);
+  // Estado persistente en un único ref para evitar problemas de closure
+  const S=useRef({active:false,text:'',rec:null,onFinish,isNumber,onFinObs});
+  // Mantener callbacks actualizados sin recrear funciones
+  useEffect(()=>{S.current.onFinish=onFinish;S.current.isNumber=isNumber;S.current.onFinObs=onFinObs;},[onFinish,isNumber,onFinObs]);
+
   const [on,setOn]=useState(false);
-  const rawRef=useRef('');
   const [preview,setPreview]=useState('');
 
-  const toggle=useCallback(()=>{
-    if(on){
-      ref.current?.stop();ref.current=null;
-      setOn(false);
-      const raw=rawRef.current.trim();
-      // Check for "fin de observaciones" auto-trigger
-      if(onFinObs&&/fin\s+de\s+observaciones/i.test(raw)){
-        const cleaned=cleanSpeech(raw);
-        onFinObs(cleaned);rawRef.current='';setPreview('');return;
-      }
-      let cleaned=cleanSpeech(raw);
-      if(isNumber){const n=spanishToNum(cleaned);if(n)cleaned=n;}
-      onFinish(cleaned);rawRef.current='';setPreview('');return;
-    }
+  const deliver=useCallback(()=>{
+    const{text,onFinish:fin,isNumber:isNum,onFinObs:finObs}=S.current;
+    const raw=text.trim();
+    S.current.text='';
+    setPreview('');
+    if(!raw) return;
+    if(finObs&&/fin\s+de\s+observaciones/i.test(raw)){finObs(cleanSpeech(raw));return;}
+    let cleaned=cleanSpeech(raw);
+    if(isNum){const n=spanishToNum(cleaned);if(n)cleaned=n;}
+    if(cleaned) fin(cleaned);
+  },[]);
+
+  const startInstance=useCallback(()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){alert('Requiere Chrome en Android para el reconocimiento de voz.');return;}
+    if(!SR) return;
+    // Crear siempre una NUEVA instancia — nunca reutilizar la anterior
     const r=new SR();
-    r.lang='es-ES';r.continuous=true;r.interimResults=true;
+    r.lang='es-ES';
+    r.continuous=true;
+    r.interimResults=true;
+    r.maxAlternatives=1;
+
     r.onresult=e=>{
       let interim='';
+      // e.resultIndex marca desde qué índice son nuevos resultados
+      // Sólo procesamos desde resultIndex en adelante — nunca desde 0
       for(let i=e.resultIndex;i<e.results.length;i++){
-        const t=e.results[i][0].transcript;
-        if(e.results[i].isFinal){
-          rawRef.current+=t+' ';
-          if(onFinObs&&/fin\s+de\s+observaciones/i.test(t)) r.stop();
-        } else interim=t;
-      }
-      setPreview(rawRef.current+interim);
-    };
-    r.onerror=e=>{if(e.error!=='no-speech'){ref.current=null;setOn(false);}};
-    r.onend=()=>{
-      if(ref.current===r){
-        if(onFinObs&&/fin\s+de\s+observaciones/i.test(rawRef.current)){
-          ref.current=null;setOn(false);
-          const cleaned=cleanSpeech(rawRef.current);
-          onFinObs(cleaned);rawRef.current='';setPreview('');return;
+        const res=e.results[i];
+        if(res.isFinal){
+          const t=res[0].transcript;
+          S.current.text+=t+' ';
+          setPreview(S.current.text);
+          // "fin de observaciones" → parar automáticamente
+          if(S.current.onFinObs&&/fin\s+de\s+observaciones/i.test(t)){
+            S.current.active=false;
+            S.current.rec=null;
+            try{r.stop();}catch(_){}
+            setOn(false);
+            deliver();
+            return;
+          }
+        } else {
+          interim+=res[0].transcript;
         }
-        try{r.start();}catch(e){ref.current=null;setOn(false);}
+      }
+      if(interim) setPreview(S.current.text+interim);
+    };
+
+    r.onerror=e=>{
+      // 'no-speech' y 'aborted' son normales, ignorar
+      if(e.error==='no-speech'||e.error==='aborted') return;
+      console.warn('SR error:',e.error);
+    };
+
+    r.onend=()=>{
+      // Si el usuario ya paró (active=false), no hacer nada
+      if(!S.current.active) return;
+      // Chrome paró solo (pausa larga, etc.) → nueva instancia
+      // Comprobamos que sigue siendo la instancia actual antes de reiniciar
+      if(S.current.rec===r){
+        S.current.rec=null;
+        // Pequeño delay para evitar que Chrome bloquee la reapertura inmediata
+        setTimeout(()=>{
+          if(S.current.active) startInstance();
+        },250);
       }
     };
-    rawRef.current='';setPreview('');r.start();ref.current=r;setOn(true);
-  },[on,onFinish,isNumber,onFinObs]);
 
-  const stop=useCallback(()=>{ref.current?.stop();ref.current=null;setOn(false);},[]);
+    S.current.rec=r;
+    try{r.start();}catch(e){console.warn('No se pudo iniciar SR:',e);}
+  },[deliver]);
+
+  const toggle=useCallback(()=>{
+    if(S.current.active){
+      // PARAR → entregar texto acumulado
+      S.current.active=false;
+      const rec=S.current.rec;
+      S.current.rec=null;
+      try{rec?.stop();}catch(_){}
+      setOn(false);
+      deliver();
+    } else {
+      // INICIAR → limpiar y arrancar nueva instancia
+      S.current.text='';
+      S.current.active=true;
+      setPreview('');
+      setOn(true);
+      startInstance();
+    }
+  },[deliver,startInstance]);
+
+  const stop=useCallback(()=>{
+    if(!S.current.active) return;
+    S.current.active=false;
+    const rec=S.current.rec;
+    S.current.rec=null;
+    try{rec?.stop();}catch(_){}
+    setOn(false);
+    S.current.text='';
+    setPreview('');
+  },[]);
+
   return{on,toggle,stop,preview};
 }
 
