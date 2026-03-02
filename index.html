@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0d0d0d"/>
 <title>PeritoApp Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -13,274 +12,78 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 :root{
-  --bg:#0d0d0d;
-  --surface:#161616;
-  --surface2:#1e1e1e;
-  --border:#2a2a2a;
-  --accent:#f97316;
-  --accent2:#fb923c;
-  --text:#f0f0f0;
-  --text2:#a0a0a0;
-  --green:#22c55e;
-  --red:#ef4444;
-  --yellow:#f59e0b;
-  --blue:#3b82f6;
+  --bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--border:#2a2a2a;
+  --accent:#f97316;--accent2:#fb923c;--text:#f0f0f0;--text2:#a0a0a0;
+  --green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body,#root{height:100%;width:100%;overflow:hidden;}
 body{background:var(--bg);font-family:'Barlow',sans-serif;color:var(--text);overscroll-behavior:none;}
-button,input,textarea,select{font-family:'Barlow',sans-serif;}
+button,input,textarea{font-family:'Barlow',sans-serif;}
 ::-webkit-scrollbar{width:0;}
-
-/* ANIMATIONS */
 @keyframes spin{to{transform:rotate(360deg);}}
-@keyframes slideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
-@keyframes slideIn{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
-@keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.06);}100%{transform:scale(1);}}
-@keyframes micGlow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}50%{box-shadow:0 0 0 16px rgba(239,68,68,0);}}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
-@keyframes checkPop{0%{transform:scale(0) rotate(-10deg);}70%{transform:scale(1.2) rotate(5deg);}100%{transform:scale(1) rotate(0deg);}}
-
-.slideUp{animation:slideUp .3s cubic-bezier(.16,1,.3,1);}
-.slideIn{animation:slideIn .25s cubic-bezier(.16,1,.3,1);}
-.micGlow{animation:micGlow 1s ease infinite!important;}
-.checkPop{animation:checkPop .4s cubic-bezier(.16,1,.3,1);}
-
-/* SCREEN WRAPPER */
-.screen{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;
-  background:var(--bg);
-  overflow:hidden;
-}
-
-/* SCROLLABLE CONTENT AREA */
-.content{
-  flex:1;overflow-y:auto;overflow-x:hidden;
-  padding:0 0 120px 0;
-  -webkit-overflow-scrolling:touch;
-}
-
-/* BIG INPUT */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes waveA{0%{height:15%}100%{height:85%}}
+@keyframes waveB{0%{height:40%}100%{height:100%}}
+@keyframes waveC{0%{height:20%}100%{height:70%}}
+@keyframes waveD{0%{height:55%}100%{height:95%}}
+@keyframes waveE{0%{height:10%}100%{height:60%}}
+@keyframes recPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.9);}}
+@keyframes checkBounce{0%{transform:scale(0);}70%{transform:scale(1.2);}100%{transform:scale(1);}}
+.fadeUp{animation:fadeUp .25s cubic-bezier(.16,1,.3,1);}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
 .bigInput{
-  width:100%;background:var(--surface2);
-  border:2px solid var(--border);border-radius:16px;
-  padding:18px 56px 18px 20px;
-  color:var(--text);font-size:18px;font-weight:500;
-  font-family:'Barlow',sans-serif;
-  -webkit-appearance:none;outline:none;
-  transition:border-color .2s;
+  width:100%;background:var(--surface2);border:2px solid var(--border);border-radius:14px;
+  padding:16px 52px 16px 18px;color:var(--text);font-size:18px;font-weight:500;
+  -webkit-appearance:none;outline:none;transition:border-color .2s;
 }
 .bigInput:focus{border-color:var(--accent);}
 .bigInput::placeholder{color:#444;}
-
-/* BIG TEXTAREA */
 .bigTextarea{
-  width:100%;background:var(--surface2);
-  border:2px solid var(--border);border-radius:16px;
-  padding:18px 20px;resize:none;
-  color:var(--text);font-size:17px;line-height:1.6;
-  font-family:'Barlow',sans-serif;outline:none;
-  transition:border-color .2s;
+  width:100%;background:var(--surface2);border:2px solid var(--border);border-radius:14px;
+  padding:16px 18px;resize:none;color:var(--text);font-size:17px;line-height:1.6;
+  outline:none;transition:border-color .2s;
 }
 .bigTextarea:focus{border-color:var(--accent);}
 .bigTextarea::placeholder{color:#444;}
-
-/* ACTION BUTTON */
-.actionBtn{
-  width:100%;padding:20px;border:none;border-radius:18px;
+.btn{
+  width:100%;padding:18px;border:none;border-radius:16px;
   font-size:18px;font-weight:700;letter-spacing:.5px;
-  font-family:'Barlow Condensed',sans-serif;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
-  transition:transform .15s,opacity .15s;
-  -webkit-appearance:none;
+  font-family:'Barlow Condensed',sans-serif;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:transform .12s,opacity .12s;-webkit-appearance:none;
 }
-.actionBtn:active{transform:scale(.97);}
-.actionBtn.primary{background:var(--accent);color:#fff;}
-.actionBtn.secondary{background:var(--surface2);color:var(--text2);border:2px solid var(--border);}
-.actionBtn.success{background:var(--green);color:#fff;}
-.actionBtn.danger{background:#7f1d1d;color:#fca5a5;border:1px solid var(--red);}
-.actionBtn:disabled{opacity:.4;cursor:not-allowed;}
-
-/* FIELD LABEL */
-.fieldLabel{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:13px;font-weight:700;letter-spacing:2px;
-  color:var(--text2);text-transform:uppercase;margin-bottom:8px;display:block;
-}
-
-/* STEP HEADER */
-.stepHeader{
-  padding:20px 20px 0;
-  display:flex;align-items:center;justify-content:space-between;
-}
-
-/* BIG STEP NUMBER */
-.stepNum{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:72px;font-weight:900;
-  color:var(--surface2);line-height:1;
-  position:absolute;right:20px;top:10px;
-  user-select:none;pointer-events:none;
-}
-
-/* SECTION TITLE */
-.sectionTitle{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:28px;font-weight:800;letter-spacing:.5px;
-  color:var(--text);line-height:1.1;
-}
-
-/* CARD */
-.card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px;padding:20px;margin:0 16px 14px;
-}
-
-/* MIC BUTTON INLINE */
-.micBtn{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  width:36px;height:36px;border-radius:50%;border:none;
-  background:var(--surface);cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;transition:background .2s;
-  flex-shrink:0;
-}
-.micBtn.active{background:var(--red);}
-
-/* BOTTOM NAV */
-.bottomNav{
-  position:fixed;bottom:0;left:0;right:0;
-  background:var(--surface);border-top:1px solid var(--border);
-  display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));
-  z-index:100;
-}
-.navItem{
-  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
-  background:none;border:none;cursor:pointer;padding:6px 4px;
-  position:relative;
-}
-.navItem .navIcon{font-size:22px;line-height:1;}
-.navItem .navLabel{font-size:10px;font-weight:600;letter-spacing:.5px;color:var(--text2);font-family:'Barlow Condensed',sans-serif;}
-.navItem.active .navLabel{color:var(--accent);}
-.navBadge{
-  position:absolute;top:2px;right:12%;
-  background:var(--red);color:#fff;border-radius:50%;
-  width:16px;height:16px;font-size:10px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-}
-
-/* PROGRESS BAR TOP */
-.progressTop{
-  height:4px;background:var(--surface2);
-  position:relative;overflow:hidden;
-}
-.progressFill{
-  height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
-  border-radius:0 4px 4px 0;transition:width .5s cubic-bezier(.16,1,.3,1);
-}
-
-/* STATUS PILL */
-.statusPill{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:12px;font-weight:700;letter-spacing:1.5px;
-  padding:4px 10px;border-radius:20px;text-transform:uppercase;
-}
-
-/* CHECK ITEM */
-.checkItem{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;background:var(--surface2);
-  border-radius:14px;margin-bottom:8px;
-  border:1px solid var(--border);
-}
-.checkIcon{
-  width:32px;height:32px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;flex-shrink:0;
-}
-.checkText{font-size:16px;font-weight:500;color:var(--text);}
-
-/* COVERAGE BTNS */
-.covBtn{
-  flex:1;padding:16px 8px;border-radius:14px;
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:15px;font-weight:800;letter-spacing:1px;
-  cursor:pointer;border:2px solid var(--border);
-  background:var(--surface2);color:var(--text2);
-  transition:all .2s;
-}
-
-/* GPS COORD BOX */
-.coordBox{
-  background:var(--surface2);border-radius:16px;padding:16px 18px;
-  border:1px solid var(--border);margin-bottom:10px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.coordVal{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:28px;font-weight:800;color:var(--accent);letter-spacing:1px;
-}
-.coordLabel{font-size:12px;color:var(--text2);font-weight:600;letter-spacing:1px;margin-bottom:4px;}
-
-/* COPY BTN */
-.copyBtn{
-  padding:10px 16px;background:var(--surface);border:1px solid var(--border);
-  border-radius:10px;color:var(--text2);font-size:13px;font-weight:700;
-  cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;
-  transition:all .2s;flex-shrink:0;
-}
-.copyBtn.done{background:#052e16;border-color:var(--green);color:var(--green);}
-
-/* RC INPUT */
+.btn:active{transform:scale(.97);}
+.btn.primary{background:var(--accent);color:#fff;}
+.btn.secondary{background:var(--surface2);color:var(--text2);border:2px solid var(--border);}
+.btn.success{background:var(--green);color:#fff;}
+.btn.danger{background:#450a0a;color:#fca5a5;border:2px solid var(--red);}
+.btn.sm{padding:12px;font-size:15px;}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:20px;margin:0 16px 14px;}
+.fieldLabel{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:8px;display:block;}
+.micBtn{width:36px;height:36px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:all .15s;}
+.waveBar{flex:1;border-radius:3px;background:var(--accent);min-height:4px;}
+.coordVal{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:var(--accent);letter-spacing:1px;}
 .rcInput{
-  width:100%;background:var(--surface2);border:3px solid var(--accent);
-  border-radius:18px;padding:20px;
-  color:var(--accent);font-size:22px;font-weight:700;
-  font-family:'Barlow Condensed',sans-serif;letter-spacing:3px;
-  text-align:center;outline:none;-webkit-appearance:none;
+  width:100%;background:var(--surface2);border:3px solid var(--accent);border-radius:16px;
+  padding:18px;color:var(--accent);font-size:22px;font-weight:700;
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:3px;text-align:center;outline:none;
 }
-.rcInput.valid{border-color:var(--green);color:var(--green);}
-
-/* PHOTO CARD */
-.photoCard{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:20px;overflow:hidden;margin:0 16px 14px;
-}
-
-/* MODAL */
-.modal{
-  position:fixed;inset:0;background:rgba(0,0,0,.85);
-  z-index:200;display:flex;align-items:flex-end;
-}
-.modalSheet{
-  background:var(--surface);border-top:3px solid var(--accent);
-  border-radius:24px 24px 0 0;padding:24px 20px 40px;
-  width:100%;max-width:520px;margin:0 auto;
-}
-
-/* DEMO WARNING */
-.demoWarn{
-  background:#1a0d00;border:2px solid var(--accent);
-  border-radius:20px;padding:20px;margin:0 16px 14px;
-}
-
-/* FLOW STEP */
-.flowStep{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;background:var(--surface2);
-  border-radius:14px;margin-bottom:6px;
-}
-.flowIco{font-size:24px;flex-shrink:0;}
-.flowTitle{font-size:16px;font-weight:700;color:var(--text);font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px;}
-.flowDesc{font-size:13px;color:var(--text2);}
-
-/* SUCCESS BOX */
-.successBox{
-  background:#052e16;border:2px solid var(--green);
-  border-radius:20px;padding:32px 20px;
-  text-align:center;margin:0 16px;
-}
+.rcInput.ok{border-color:var(--green);color:var(--green);}
+.progressBar{height:4px;background:var(--surface2);}
+.progressFill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s cubic-bezier(.16,1,.3,1);}
+.bottomNav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:100;}
+.navItem{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 4px;position:relative;}
+.navIcon{font-size:22px;line-height:1;}
+.navLabel{font-size:10px;font-weight:700;letter-spacing:.5px;font-family:'Barlow Condensed',sans-serif;}
+.navBadge{position:absolute;top:2px;right:14%;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.obsItem{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border-radius:12px;margin-bottom:8px;border:1px solid var(--border);}
+.obsNum{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--accent);flex-shrink:0;line-height:1.3;min-width:26px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:flex;align-items:flex-end;}
+.sheet{background:var(--surface);border-top:3px solid var(--accent);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:520px;margin:0 auto;}
+.nextBtn{position:sticky;bottom:80px;left:16px;right:16px;margin:0 16px;z-index:10;}
 </style>
 </head>
 <body>
@@ -292,136 +95,302 @@ const MAKE_WEBHOOK="https://hook.eu1.make.com/TU_WEBHOOK_AQUI";
 const uid=()=>Math.random().toString(36).substr(2,9);
 const fmtDate=(d=new Date())=>d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
 const fmtTime=(d=new Date())=>d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+const cap=s=>s&&s.length>0?s[0].toUpperCase()+s.slice(1):s;
 
-// ── MICRÓFONO TOGGLE ──────────────────────────────────────────
-function useMic(onText){
-  const ref=useRef(null);
-  const [on,setOn]=useState(false);
-  const toggle=useCallback(()=>{
-    if(on){ref.current?.stop();ref.current=null;setOn(false);return;}
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){alert('Reconocimiento de voz requiere Chrome en Android.');return;}
-    const r=new SR();
-    r.lang='es-ES';r.continuous=true;r.interimResults=false;
-    r.onresult=e=>{let t='';for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)t+=e.results[i][0].transcript+' ';if(t)onText(t);};
-    r.onerror=e=>{if(e.error!=='no-speech'){ref.current=null;setOn(false);}};
-    r.onend=()=>{if(ref.current===r){try{r.start();}catch(e){ref.current=null;setOn(false);}}};
-    r.start();ref.current=r;setOn(true);
-  },[on,onText]);
-  const stop=useCallback(()=>{ref.current?.stop();ref.current=null;setOn(false);},[]);
-  return{on,toggle,stop};
+// ════════ SPEECH CLEANUP ════════════════════════════════════════
+function cleanSpeech(text){
+  if(!text||text.trim().length<2) return text;
+  let t=text.replace(/\s+/g,' ').trim();
+  // Remove "fin de observaciones"
+  t=t.replace(/,?\s*fin\s+de\s+observaciones\.?\s*/gi,'').trim();
+  // Split by correction markers
+  const parts=t.split(/,?\s*(?:perdón|no\s+hombre|no\s+mujer|no\s+espera|o\s+mejor\s+dicho|quiero\s+decir)\s*,?\s*/gi)
+    .map(p=>p.trim()).filter(Boolean);
+  if(parts.length<=1) return cap(t);
+  // For each correction, remove last word of current result and append correction
+  let result=parts[0];
+  for(let i=1;i<parts.length;i++){
+    result=result.replace(/\s+\S+\s*$/,'').trim(); // remove last word
+    result=(result+(result?' ':'')+parts[i]).replace(/\s{2,}/g,' ');
+  }
+  return cap(result.trim());
 }
 
-// ── BIG FIELD ─────────────────────────────────────────────────
-function BigField({label,value,onChange,placeholder,type='text',half,multiline,rows=4}){
-  const onText=useCallback(t=>onChange(value+t),[value,onChange]);
-  const mic=useMic(onText);
+// ════════ NUMBER CONVERSION ══════════════════════════════════════
+function spanishToNum(text){
+  const norm=text.toLowerCase()
+    .replace(/euros?|€/gi,'').replace(/\s+y\s+/g,' ').replace(/\s+/g,' ').trim();
+  const ones={'cero':0,'un':1,'uno':1,'una':1,'dos':2,'tres':3,'cuatro':4,'cinco':5,'seis':6,'siete':7,'ocho':8,'nueve':9,'diez':10,'once':11,'doce':12,'trece':13,'catorce':14,'quince':15,'dieciséis':16,'dieciseis':16,'diecisiete':17,'dieciocho':18,'diecinueve':19,'veinte':20,'veintiuno':21,'veintidós':22,'veintidos':22,'veintitrés':23,'veintitres':23,'veinticuatro':24,'veinticinco':25,'veintiséis':26,'veintiseis':26,'veintisiete':27,'veintiocho':28,'veintinueve':29,'treinta':30,'cuarenta':40,'cincuenta':50,'sesenta':60,'setenta':70,'ochenta':80,'noventa':90};
+  const hundreds={'cien':100,'ciento':100,'doscientos':200,'doscientas':200,'trescientos':300,'trescientas':300,'cuatrocientos':400,'cuatrocientas':400,'quinientos':500,'quinientas':500,'seiscientos':600,'seiscientas':600,'setecientos':700,'setecientas':700,'ochocientos':800,'ochocientas':800,'novecientos':900,'novecientas':900};
+  const words=norm.split(/\s+/);
+  let total=0,cur=0;
+  for(const w of words){
+    if(w==='mil'){cur=cur===0?1:cur;total+=cur*1000;cur=0;}
+    else if(w==='millón'||w==='millon'||w==='millones'){cur=cur===0?1:cur;total+=cur*1000000;cur=0;}
+    else if(hundreds[w]!==undefined) cur+=hundreds[w];
+    else if(ones[w]!==undefined) cur+=ones[w];
+  }
+  total+=cur;
+  return total>0?String(total):null;
+}
+
+// ════════ MIC HOOK ═══════════════════════════════════════════════
+function useMic({onFinish,isNumber=false,onFinObs=null}){
+  const ref=useRef(null);
+  const [on,setOn]=useState(false);
+  const rawRef=useRef('');
+  const [preview,setPreview]=useState('');
+
+  const toggle=useCallback(()=>{
+    if(on){
+      ref.current?.stop();ref.current=null;
+      setOn(false);
+      const raw=rawRef.current.trim();
+      // Check for "fin de observaciones" auto-trigger
+      if(onFinObs&&/fin\s+de\s+observaciones/i.test(raw)){
+        const cleaned=cleanSpeech(raw);
+        onFinObs(cleaned);rawRef.current='';setPreview('');return;
+      }
+      let cleaned=cleanSpeech(raw);
+      if(isNumber){const n=spanishToNum(cleaned);if(n)cleaned=n;}
+      onFinish(cleaned);rawRef.current='';setPreview('');return;
+    }
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert('Requiere Chrome en Android para el reconocimiento de voz.');return;}
+    const r=new SR();
+    r.lang='es-ES';r.continuous=true;r.interimResults=true;
+    r.onresult=e=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal){
+          rawRef.current+=t+' ';
+          if(onFinObs&&/fin\s+de\s+observaciones/i.test(t)) r.stop();
+        } else interim=t;
+      }
+      setPreview(rawRef.current+interim);
+    };
+    r.onerror=e=>{if(e.error!=='no-speech'){ref.current=null;setOn(false);}};
+    r.onend=()=>{
+      if(ref.current===r){
+        if(onFinObs&&/fin\s+de\s+observaciones/i.test(rawRef.current)){
+          ref.current=null;setOn(false);
+          const cleaned=cleanSpeech(rawRef.current);
+          onFinObs(cleaned);rawRef.current='';setPreview('');return;
+        }
+        try{r.start();}catch(e){ref.current=null;setOn(false);}
+      }
+    };
+    rawRef.current='';setPreview('');r.start();ref.current=r;setOn(true);
+  },[on,onFinish,isNumber,onFinObs]);
+
+  const stop=useCallback(()=>{ref.current?.stop();ref.current=null;setOn(false);},[]);
+  return{on,toggle,stop,preview};
+}
+
+// ════════ WAVEFORM ════════════════════════════════════════════════
+const WANIMS=['waveA','waveB','waveC','waveD','waveE'];
+function Waveform({active}){
+  return(
+    <div style={{display:'flex',gap:3,alignItems:'center',height:50,padding:'4px 6px',background:'rgba(249,115,22,.07)',borderRadius:12}}>
+      {Array.from({length:24}).map((_,i)=>(
+        <div key={i} className="waveBar" style={{
+          background:active?'var(--accent)':'#2a2a2a',
+          height:active?undefined:'4px',
+          animation:active?`${WANIMS[i%5]} ${.3+(i%4)*.12}s ease-in-out infinite alternate`:'none',
+          animationDelay:active?`${i*.045}s`:'0s',
+          transition:'background .3s',
+        }}/>
+      ))}
+    </div>
+  );
+}
+
+// ════════ MIC FIELD ════════════════════════════════════════════════
+function MicField({label,value,onChange,placeholder,type='text',half,multiline,rows=4,isNumber=false}){
+  const onFinish=useCallback(t=>onChange(value+t),[value,onChange]);
+  const mic=useMic({onFinish,isNumber});
   return(
     <div style={{flex:half?1:undefined,marginBottom:16}}>
       <label className="fieldLabel">{label}</label>
       <div style={{position:'relative'}}>
         {multiline
-          ?<textarea className="bigTextarea" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} rows={rows}
-              style={{borderColor:mic.on?'var(--red)':undefined}}/>
-          :<input className="bigInput" type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-              style={{borderColor:mic.on?'var(--red)':undefined}}/>
+          ?<textarea className="bigTextarea" value={value} onChange={e=>onChange(e.target.value)}
+              placeholder={placeholder} rows={rows} style={{borderColor:mic.on?'var(--red)':undefined}}/>
+          :<input className="bigInput" type={type} value={value} onChange={e=>onChange(e.target.value)}
+              placeholder={placeholder} style={{borderColor:mic.on?'var(--red)':undefined}}/>
         }
         {!multiline&&(
-          <button className={'micBtn'+(mic.on?' active micGlow':'')} onClick={mic.toggle}>
+          <button onClick={mic.toggle} className="micBtn"
+            style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
+              background:mic.on?'var(--red)':'var(--surface)',border:`1px solid ${mic.on?'var(--red)':'var(--border)'}`,
+              boxShadow:mic.on?'0 0 0 6px rgba(239,68,68,.15)':undefined}}>
             🎙️
           </button>
         )}
       </div>
-      {multiline&&(
-        <button onClick={mic.toggle} className={'actionBtn '+(mic.on?'danger':'secondary')} style={{marginTop:10,padding:'14px'}}>
-          🎙️ {mic.on?'● ESCUCHANDO — toca para parar':'DICTAR TEXTO'}
-        </button>
+      {mic.on&&(
+        <div style={{marginTop:10,background:'#0d0d0d',border:'2px solid var(--red)',borderRadius:14,padding:14}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+            <div style={{width:10,height:10,borderRadius:'50%',background:'var(--red)',animation:'recPulse 1s ease infinite'}}/>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:16,fontWeight:700,color:'var(--red)',letterSpacing:1}}>ESCUCHANDO...</span>
+          </div>
+          <Waveform active={true}/>
+          {mic.preview&&<div style={{marginTop:8,fontSize:13,color:'#666',lineHeight:1.5,maxHeight:56,overflow:'hidden'}}>{mic.preview}</div>}
+          <button onClick={mic.toggle} className="btn danger sm" style={{marginTop:12}}>⏹ PARAR Y PROCESAR</button>
+        </div>
       )}
-      {mic.on&&!multiline&&<div style={{fontSize:12,color:'var(--red)',marginTop:5,fontWeight:600,letterSpacing:.5}}>● ESCUCHANDO — toca 🎙️ para parar</div>}
+      {multiline&&!mic.on&&(
+        <button onClick={mic.toggle} className="btn secondary sm" style={{marginTop:8}}>🎙️ DICTAR TEXTO</button>
+      )}
+      {multiline&&mic.on&&(
+        <div style={{marginTop:10,background:'#0d0d0d',border:'2px solid var(--red)',borderRadius:14,padding:14}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+            <div style={{width:10,height:10,borderRadius:'50%',background:'var(--red)',animation:'recPulse 1s ease infinite'}}/>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:16,fontWeight:700,color:'var(--red)',letterSpacing:1}}>ESCUCHANDO — toca para parar</span>
+          </div>
+          <Waveform active={true}/>
+          {mic.preview&&<div style={{marginTop:8,fontSize:13,color:'#666',lineHeight:1.5,maxHeight:72,overflow:'hidden'}}>{mic.preview}</div>}
+          <button onClick={mic.toggle} className="btn danger sm" style={{marginTop:12}}>⏹ PARAR Y PROCESAR</button>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── PANTALLA: INICIO ──────────────────────────────────────────
-function PantallaInicio({S,setTab}){
-  const steps=[
-    {k:'datos',label:'Datos del expediente',done:!!(S.poliza&&S.asegurado&&S.perito),ico:'📋',tab:'datos'},
-    {k:'fotos',label:'Fotografías del siniestro',done:S.fotos.length>0,ico:'📷',tab:'fotos'},
-    {k:'narracion',label:'Narración y causa',done:S.narracion.length>20,ico:'🎙️',tab:'narracion'},
-    {k:'catastro',label:'Referencia catastral',done:!!(S.catastro?.rc),ico:'🏛️',tab:'catastro'},
-  ];
-  const pct=Math.round(steps.filter(s=>s.done).length/steps.length*100);
+// ════════ OBSERVACIONES FIELD ══════════════════════════════════════
+function ObsField({obs,onChange}){
+  const [manText,setManText]=useState('');
+  const [showMan,setShowMan]=useState(false);
+
+  const onFinObs=useCallback(rawText=>{
+    // Split by sentence boundaries (periods, numbered items)
+    const items=rawText
+      .split(/\.\s+|\n/)
+      .map(s=>s.replace(/^\d+[.)]\s*/,'').trim())
+      .filter(s=>s.length>4);
+    if(items.length>0) onChange([...obs,...items]);
+    else if(rawText.trim().length>4) onChange([...obs,rawText.trim()]);
+  },[obs,onChange]);
+
+  const onFinish=useCallback(t=>{
+    if(t.trim().length>4) onChange([...obs,t.trim()]);
+  },[obs,onChange]);
+
+  const mic=useMic({onFinish,onFinObs});
+
+  const addManual=()=>{if(manText.trim().length>2){onChange([...obs,manText.trim()]);setManText('');setShowMan(false);}};
 
   return(
-    <div className="screen slideUp">
-      {/* HERO */}
-      <div style={{background:'linear-gradient(160deg,#1a0d00 0%,#0d0d0d 60%)',padding:'32px 24px 28px',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',top:-20,right:-20,fontSize:120,opacity:.06,lineHeight:1}}>🛡️</div>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
-          <span style={{fontSize:32}}>🛡️</span>
-          <div>
-            <div style={{fontFamily:'Barlow Condensed',fontSize:28,fontWeight:900,color:'var(--accent)',letterSpacing:1}}>PERITOAPP PRO</div>
-            <div style={{fontSize:13,color:'var(--text2)',fontWeight:500}}>Sistema de gestión de siniestros</div>
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:16}}>
-          <div style={{flex:1}}>
-            <div style={{background:'var(--surface2)',borderRadius:8,height:12,overflow:'hidden'}}>
-              <div style={{height:'100%',width:pct+'%',background:'linear-gradient(90deg,var(--accent),var(--accent2))',borderRadius:8,transition:'width .6s'}}/>
-            </div>
-          </div>
-          <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:pct===100?'var(--green)':'var(--accent)',letterSpacing:1}}>{pct}%</div>
-        </div>
-        <div style={{fontSize:15,color:'var(--text2)',fontWeight:500}}>
-          {pct===0?'Comienza rellenando los datos del expediente':
-           pct===100?'✓ Expediente completo. Listo para enviar.':
-           'Completa los pasos pendientes para enviar el informe'}
-        </div>
-        {S.poliza&&<div style={{marginTop:10,fontFamily:'Barlow Condensed',fontSize:20,fontWeight:700,color:'var(--text)',letterSpacing:1}}>📋 PÓLIZA: {S.poliza}</div>}
+    <div style={{marginBottom:16}}>
+      <label className="fieldLabel">OBSERVACIONES</label>
+      <div style={{fontSize:14,color:'var(--text2)',marginBottom:12,lineHeight:1.6,background:'var(--surface2)',borderRadius:12,padding:'10px 14px',border:'1px solid var(--border)'}}>
+        💡 Di todas las observaciones seguidas. El sistema las numerará automáticamente.<br/>
+        Di <b style={{color:'var(--accent)'}}>"fin de observaciones"</b> para terminar el audio.
       </div>
 
-      <div className="content" style={{padding:'16px 0 120px'}}>
-        {/* STEPS */}
+      {obs.length>0&&(
+        <div style={{marginBottom:12}}>
+          {obs.map((o,i)=>(
+            <div key={i} className="obsItem">
+              <span className="obsNum">{i+1}.</span>
+              <span style={{fontSize:16,color:'var(--text)',lineHeight:1.5,flex:1}}>{o}</span>
+              <button onClick={()=>onChange(obs.filter((_,j)=>j!==i))}
+                style={{background:'none',border:'none',color:'var(--red)',fontSize:18,cursor:'pointer',padding:'0 4px',flexShrink:0}}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {mic.on&&(
+        <div style={{background:'#0d0d0d',border:'2px solid var(--red)',borderRadius:14,padding:16,marginBottom:10}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <div style={{width:12,height:12,borderRadius:'50%',background:'var(--red)',animation:'recPulse 1s ease infinite',flexShrink:0}}/>
+            <span style={{fontFamily:'Barlow Condensed',fontSize:17,fontWeight:700,color:'var(--red)',lineHeight:1.3}}>
+              ESCUCHANDO OBSERVACIONES...<br/>
+              <span style={{fontSize:13,color:'#f87171',fontWeight:400}}>Di "fin de observaciones" para terminar</span>
+            </span>
+          </div>
+          <Waveform active={true}/>
+          {mic.preview&&(
+            <div style={{marginTop:10,fontSize:14,color:'#777',lineHeight:1.5,maxHeight:80,overflow:'hidden',fontStyle:'italic'}}>
+              {mic.preview}
+            </div>
+          )}
+          <button onClick={mic.toggle} className="btn danger sm" style={{marginTop:12}}>⏹ PARAR Y NUMERAR</button>
+        </div>
+      )}
+
+      {!mic.on&&!showMan&&(
+        <div style={{display:'flex',gap:10}}>
+          <button onClick={mic.toggle} className="btn primary" style={{flex:3,padding:'16px'}}>🎙️ DICTAR OBSERVACIONES</button>
+          <button onClick={()=>setShowMan(true)} className="btn secondary" style={{flex:1,padding:'16px',fontSize:16}}>✍️</button>
+        </div>
+      )}
+
+      {showMan&&(
+        <div style={{background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:14,padding:14}}>
+          <label className="fieldLabel">ESCRIBIR OBSERVACIÓN</label>
+          <textarea className="bigTextarea" value={manText} onChange={e=>setManText(e.target.value)} rows={2}
+            placeholder="Escribe la observación..." style={{marginBottom:10}}/>
+          <div style={{display:'flex',gap:10}}>
+            <button onClick={()=>{setShowMan(false);setManText('');}} className="btn secondary sm" style={{flex:1}}>CANCELAR</button>
+            <button onClick={addManual} className="btn primary sm" style={{flex:2}}>✓ AÑADIR</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ════════ PANTALLA INICIO ═════════════════════════════════════════
+function PantallaInicio({S,setTab,pct,steps}){
+  return(
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(160deg,#1a0d00 0%,#0d0d0d 65%)',padding:'28px 20px 24px',position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,right:-20,fontSize:110,opacity:.05,lineHeight:1,userSelect:'none'}}>🛡️</div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+          <span style={{fontSize:30}}>🛡️</span>
+          <div>
+            <div style={{fontFamily:'Barlow Condensed',fontSize:26,fontWeight:900,color:'var(--accent)',letterSpacing:1}}>PERITOAPP PRO</div>
+            <div style={{fontSize:13,color:'var(--text2)'}}>Gestión de siniestros · {fmtDate()}</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:10}}>
+          <div style={{flex:1,background:'var(--surface2)',borderRadius:8,height:12,overflow:'hidden'}}>
+            <div style={{height:'100%',width:pct+'%',background:'linear-gradient(90deg,var(--accent),var(--accent2))',borderRadius:8,transition:'width .6s'}}/>
+          </div>
+          <div style={{fontFamily:'Barlow Condensed',fontSize:34,fontWeight:900,color:pct===100?'var(--green)':'var(--accent)'}}>{pct}%</div>
+        </div>
+        <div style={{fontSize:15,color:'var(--text2)'}}>
+          {pct===0?'Toca un paso para empezar':pct===100?'✓ Expediente completo':'Completa los pasos para enviar el informe'}
+        </div>
+        {S.poliza&&<div style={{marginTop:10,fontFamily:'Barlow Condensed',fontSize:20,fontWeight:700,color:'var(--text)'}}>📋 {S.poliza} · {S.asegurado}</div>}
+      </div>
+
+      <div className="content" style={{padding:'14px 0 120px'}}>
         {steps.map((s,i)=>(
-          <button key={s.k} onClick={()=>setTab(s.tab)} className="checkItem slideUp" style={{width:'calc(100% - 32px)',margin:'0 16px 10px',cursor:'pointer',border:'1px solid '+(s.done?'var(--green)':'var(--border)'),background:s.done?'#0d1f14':'var(--surface2)',animation:`slideUp ${.1+i*.07}s both`,textAlign:'left'}}>
-            <div className="checkIcon" style={{background:s.done?'#052e16':'var(--surface)',border:'2px solid '+(s.done?'var(--green)':'var(--border)')}}>
-              {s.done?<span className="checkPop">✓</span>:<span style={{fontSize:18}}>{s.ico}</span>}
+          <button key={s.id} onClick={()=>setTab(s.tab)} style={{
+            width:'calc(100% - 32px)',margin:'0 16px 10px',display:'flex',alignItems:'center',gap:14,
+            padding:'16px',background:s.done?'#0a1f0f':'var(--surface2)',
+            border:'1px solid '+(s.done?'var(--green)':'var(--border)'),
+            borderRadius:16,cursor:'pointer',textAlign:'left',
+            animation:`fadeUp ${.1+i*.06}s both`,
+          }}>
+            <div style={{width:44,height:44,borderRadius:14,background:s.done?'#052e16':'var(--surface)',border:'2px solid '+(s.done?'var(--green)':'var(--border)'),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:s.done?20:22}}>
+              {s.done?<span style={{animation:'checkBounce .4s both'}}>✓</span>:s.ico}
             </div>
             <div style={{flex:1}}>
-              <div className="checkText" style={{color:s.done?'#86efac':'var(--text)',fontWeight:600}}>{s.label}</div>
-              <div style={{fontSize:13,color:s.done?'#4ade80':'var(--text2)',marginTop:2}}>{s.done?'✓ Completado':'Pendiente — toca para rellenar'}</div>
+              <div style={{fontFamily:'Barlow Condensed',fontSize:18,fontWeight:700,color:s.done?'#86efac':'var(--text)',letterSpacing:.5}}>{s.label}</div>
+              <div style={{fontSize:13,color:s.done?'#4ade80':'var(--text2)',marginTop:2}}>{s.done?'Completado ✓':'Pendiente — toca para rellenar'}</div>
             </div>
-            <span style={{fontSize:20,color:s.done?'var(--green)':'var(--text2)'}}>›</span>
+            <span style={{fontSize:22,color:s.done?'var(--green)':'var(--text2)'}}>›</span>
           </button>
         ))}
 
-        {/* ENVIAR */}
-        {pct===100?(
-          <div style={{padding:'0 16px'}}>
-            <button onClick={()=>setTab('envio')} className="actionBtn success" style={{marginTop:8}}>
-              🚀 ENVIAR INFORME A MAKE.COM
-            </button>
-          </div>
-        ):(
-          <div style={{margin:'8px 16px 0',padding:'16px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:16}}>
-            <div style={{fontSize:14,color:'var(--text2)',textAlign:'center',lineHeight:1.6}}>
-              Completa todos los pasos para poder enviar el informe
-            </div>
-          </div>
-        )}
-
-        {/* EXPEDIENTE INFO */}
-        {S.poliza&&(
-          <div style={{margin:'14px 16px 0',padding:'16px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:16}}>
-            <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'var(--text2)',letterSpacing:2,marginBottom:10}}>EXPEDIENTE ACTUAL</div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-              {[['ID',S.id.toUpperCase()],['Póliza',S.poliza||'—'],['Asegurado',S.asegurado||'—'],['Perito',S.perito||'—'],['Fotos',S.fotos.length+' tomadas'],['Catastro',S.catastro?.rc||'Pendiente']].map(([k,v])=>(
-                <div key={k} style={{background:'var(--surface2)',borderRadius:10,padding:'10px 12px'}}>
-                  <div style={{fontSize:10,color:'var(--text2)',letterSpacing:1,marginBottom:2,fontWeight:600}}>{k}</div>
-                  <div style={{fontSize:14,color:'var(--text)',fontWeight:600,wordBreak:'break-all'}}>{v}</div>
-                </div>
-              ))}
-            </div>
+        {pct===100&&(
+          <div style={{padding:'6px 16px 0'}}>
+            <button onClick={()=>setTab('envio')} className="btn success" style={{fontSize:20,padding:'22px'}}>🚀 ENVIAR INFORME A MAKE.COM</button>
           </div>
         )}
       </div>
@@ -429,183 +398,250 @@ function PantallaInicio({S,setTab}){
   );
 }
 
-// ── PANTALLA: DATOS ───────────────────────────────────────────
-function PantallaDatos({S,upd}){
+// ════════ PANTALLA DATOS ══════════════════════════════════════════
+function PantallaDatos({S,upd,setTab}){
   return(
-    <div className="screen">
-      <div style={{background:'linear-gradient(135deg,#1a0d00,#0d0d0d)',padding:'24px 20px 20px',position:'relative'}}>
-        <div className="stepNum">01</div>
-        <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'var(--accent)',letterSpacing:3,marginBottom:6}}>PASO 1 DE 4</div>
-        <div className="sectionTitle">DATOS DEL<br/>EXPEDIENTE</div>
-        <div style={{fontSize:14,color:'var(--text2)',marginTop:8}}>Cada campo tiene 🎙️ para dictar</div>
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#1a0d00,#0d0d0d)',padding:'22px 20px 16px',position:'relative'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--accent)',letterSpacing:3,marginBottom:4}}>PASO 1 DE 4</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--text)',lineHeight:1.05}}>DATOS DEL<br/>EXPEDIENTE</div>
+        <div style={{fontSize:14,color:'var(--text2)',marginTop:6}}>Toca 🎙️ en cualquier campo para dictar</div>
       </div>
-
-      <div className="content" style={{padding:'20px 0 120px'}}>
-        <div style={{padding:'0 16px'}}>
-          <BigField label="Nº PÓLIZA" value={S.poliza} onChange={v=>upd('poliza',v)} placeholder="Ej: AUT-123456"/>
-          <BigField label="NOMBRE DEL ASEGURADO / TOMADOR" value={S.asegurado} onChange={v=>upd('asegurado',v)} placeholder="Nombre y apellidos completos"/>
-          <BigField label="PERITO ACTUANTE" value={S.perito} onChange={v=>upd('perito',v)} placeholder="Tu nombre completo"/>
-          <div style={{display:'flex',gap:12}}>
-            <BigField label="FECHA SINIESTRO" value={S.fechaSiniestro} onChange={v=>upd('fechaSiniestro',v)} placeholder="DD/MM/AAAA" half/>
-            <BigField label="FECHA VISITA" value={S.fechaVisita} onChange={v=>upd('fechaVisita',v)} placeholder="DD/MM/AAAA" half/>
-          </div>
-          <div style={{display:'flex',gap:12}}>
-            <BigField label="HORA VISITA" value={S.horaVisita} onChange={v=>upd('horaVisita',v)} placeholder="HH:MM" half/>
-            <BigField label="EXPTE. CÍA." value={S.expCia} onChange={v=>upd('expCia',v)} placeholder="Ref." half/>
-          </div>
-
-          {/* COBERTURA */}
-          <label className="fieldLabel" style={{marginTop:4}}>DECISIÓN SOBRE COBERTURA</label>
-          <div style={{display:'flex',gap:10,marginBottom:14}}>
-            {['cubre','rechaza','pendiente'].map(c=>(
-              <button key={c} onClick={()=>upd('cobertura',c)} className="covBtn" style={{
-                background:S.cobertura===c?
-                  (c==='cubre'?'#052e16':c==='rechaza'?'#450a0a':'#431407'):'var(--surface2)',
-                borderColor:S.cobertura===c?
-                  (c==='cubre'?'var(--green)':c==='rechaza'?'var(--red)':'var(--accent)'):'var(--border)',
-                color:S.cobertura===c?
-                  (c==='cubre'?'#86efac':c==='rechaza'?'#fca5a5':'#fdba74'):'var(--text2)',
-              }}>
+      <div className="content" style={{padding:'18px 16px 140px'}}>
+        <MicField label="Nº PÓLIZA" value={S.poliza} onChange={v=>upd('poliza',v)} placeholder="Ej: AUT-123456"/>
+        <MicField label="NOMBRE ASEGURADO / TOMADOR" value={S.asegurado} onChange={v=>upd('asegurado',v)} placeholder="Nombre y apellidos completos"/>
+        <MicField label="PERITO ACTUANTE" value={S.perito} onChange={v=>upd('perito',v)} placeholder="Tu nombre completo"/>
+        <div style={{display:'flex',gap:12}}>
+          <MicField label="FECHA SINIESTRO" value={S.fechaSiniestro} onChange={v=>upd('fechaSiniestro',v)} placeholder="DD/MM/AAAA" half/>
+          <MicField label="FECHA VISITA" value={S.fechaVisita} onChange={v=>upd('fechaVisita',v)} placeholder="DD/MM/AAAA" half/>
+        </div>
+        <div style={{display:'flex',gap:12}}>
+          <MicField label="HORA VISITA" value={S.horaVisita} onChange={v=>upd('horaVisita',v)} placeholder="HH:MM" half/>
+          <MicField label="EXPTE. CÍA." value={S.expCia} onChange={v=>upd('expCia',v)} placeholder="Ref." half/>
+        </div>
+        <label className="fieldLabel" style={{marginTop:6}}>DECISIÓN SOBRE COBERTURA</label>
+        <div style={{display:'flex',gap:10,marginBottom:16}}>
+          {['cubre','rechaza','pendiente'].map(c=>{
+            const colors={cubre:['#052e16','#16a34a','#86efac'],rechaza:['#450a0a','#dc2626','#fca5a5'],pendiente:['#431407','#ea580c','#fdba74']};
+            const[bg,border,color]=S.cobertura===c?colors[c]:['var(--surface2)','var(--border)','var(--text2)'];
+            return(
+              <button key={c} onClick={()=>upd('cobertura',c)} style={{flex:1,padding:'14px 6px',background:bg,border:'2px solid '+border,borderRadius:12,color,fontFamily:'Barlow Condensed',fontSize:14,fontWeight:800,letterSpacing:.5,cursor:'pointer'}}>
                 {c==='cubre'?'✓ CUBRE':c==='rechaza'?'✗ RECHAZA':'⧖ CONSULTA'}
               </button>
-            ))}
+            );
+          })}
+        </div>
+        {S.cobertura&&<MicField label="MOTIVO DE LA DECISIÓN" value={S.motivoCob} onChange={v=>upd('motivoCob',v)} placeholder="Explica el motivo..." multiline rows={3}/>}
+      </div>
+      <div className="nextBtn">
+        <button onClick={()=>setTab('fotos')} className="btn primary" style={{fontSize:20,padding:'20px'}}>
+          GUARDAR Y CONTINUAR → FOTOGRAFÍAS
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ════════ PANTALLA FOTOS (WIZARD) ══════════════════════════════════
+function PantallaFotos({S,setS,setTab}){
+  const [step,setStep]=useState('camera'); // 'camera'|'caption'|'gallery'
+  const [curPhoto,setCurPhoto]=useState(null);
+  const [curCap,setCurCap]=useState('');
+  const fileRef=useRef();
+
+  const onFile=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=ev=>{setCurPhoto(ev.target.result);setCurCap('');setStep('caption');};
+    r.readAsDataURL(f);e.target.value='';
+  };
+
+  const saveAndNext=()=>{
+    setS(s=>({...s,fotos:[...s.fotos,{id:uid(),dataUrl:curPhoto,caption:curCap}]}));
+    setCurPhoto(null);setCurCap('');setStep('camera');
+  };
+
+  const finish=()=>{
+    if(curPhoto) setS(s=>({...s,fotos:[...s.fotos,{id:uid(),dataUrl:curPhoto,caption:curCap}]}));
+    else {} // no current photo
+    setStep('gallery');
+  };
+
+  const onCapFinish=useCallback(t=>setCurCap(p=>p+t),[]);
+  const mic=useMic({onFinish:onCapFinish});
+
+  // STEP: CAMERA
+  if(step==='camera') return(
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#001a10,#0d0d0d)',padding:'22px 20px 16px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--green)',letterSpacing:3,marginBottom:4}}>PASO 2 DE 4</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--text)',lineHeight:1.05}}>FOTOGRAFÍAS<br/>DEL SINIESTRO</div>
+        <div style={{fontSize:14,color:'var(--text2)',marginTop:6}}>
+          {S.fotos.length>0
+            ?<span style={{color:'var(--green)',fontWeight:600}}>✓ {S.fotos.length} foto{S.fotos.length!==1?'s':''} guardada{S.fotos.length!==1?'s':''}</span>
+            :'Toma las fotos de los daños'}
+        </div>
+      </div>
+      <div className="content" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 24px 140px',gap:20}}>
+        <div style={{fontSize:100,lineHeight:1,opacity:.6}}>📷</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:26,fontWeight:700,color:'var(--text)',textAlign:'center',lineHeight:1.2}}>
+          Toma la siguiente fotografía<br/>del siniestro
+        </div>
+        <div style={{fontSize:16,color:'var(--text2)',textAlign:'center',lineHeight:1.5}}>
+          Tras cada foto añadirás el pie de foto con el micrófono
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={onFile} style={{display:'none'}}/>
+        <button onClick={()=>fileRef.current.click()} className="btn primary" style={{width:'100%',fontSize:22,padding:'22px'}}>
+          📷 TOMAR FOTO
+        </button>
+        {S.fotos.length>0&&(
+          <button onClick={()=>setStep('gallery')} className="btn secondary" style={{width:'100%',fontSize:18,padding:'18px'}}>
+            📋 VER FOTOS GUARDADAS ({S.fotos.length}) Y CONTINUAR →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // STEP: CAPTION
+  if(step==='caption') return(
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#001a10,#0d0d0d)',padding:'18px 20px 14px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--green)',letterSpacing:3,marginBottom:4}}>
+          FOTO {S.fotos.length+1} — AÑADIR PIE DE FOTO
+        </div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:26,fontWeight:900,color:'var(--text)'}}>PIE DE FOTO</div>
+      </div>
+      <div className="content" style={{padding:'16px',display:'flex',flexDirection:'column',gap:14,paddingBottom:80}}>
+        {/* PHOTO PREVIEW */}
+        <img src={curPhoto} style={{width:'100%',maxHeight:260,objectFit:'cover',borderRadius:18,border:'2px solid var(--border)'}}/>
+
+        {/* CAPTION INPUT */}
+        <div>
+          <label className="fieldLabel">PIE DE FOTO (VOZ O TEXTO)</label>
+          <div style={{position:'relative'}}>
+            <textarea className="bigTextarea" value={curCap} onChange={e=>setCurCap(e.target.value)} rows={3}
+              placeholder="Describe el daño visible en esta fotografía..."
+              style={{borderColor:mic.on?'var(--red)':undefined,paddingBottom:50}}/>
           </div>
-          {S.cobertura&&(
-            <BigField label="MOTIVO DE LA DECISIÓN" value={S.motivoCob} onChange={v=>upd('motivoCob',v)}
-              placeholder="Explica el motivo..." multiline rows={3}/>
+          {!mic.on&&(
+            <button onClick={mic.toggle} className="btn secondary sm" style={{marginTop:8}}>🎙️ DICTAR PIE DE FOTO</button>
+          )}
+          {mic.on&&(
+            <div style={{marginTop:10,background:'#0d0d0d',border:'2px solid var(--red)',borderRadius:14,padding:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                <div style={{width:10,height:10,borderRadius:'50%',background:'var(--red)',animation:'recPulse 1s ease infinite'}}/>
+                <span style={{fontFamily:'Barlow Condensed',fontSize:16,fontWeight:700,color:'var(--red)'}}>ESCUCHANDO...</span>
+              </div>
+              <Waveform active={true}/>
+              {mic.preview&&<div style={{marginTop:8,fontSize:13,color:'#666',maxHeight:50,overflow:'hidden'}}>{mic.preview}</div>}
+              <button onClick={mic.toggle} className="btn danger sm" style={{marginTop:10}}>⏹ PARAR DICTADO</button>
+            </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
 
-// ── PANTALLA: FOTOS ────────────────────────────────────────────
-function PantallaFotos({S,setS}){
-  const fileRef=useRef();
-  const [editId,setEditId]=useState(null);
-  const [capText,setCapText]=useState('');
-  const editFoto=S.fotos.find(f=>f.id===editId);
-  const onText=useCallback(t=>setCapText(p=>p+t),[]);
-  const mic=useMic(onText);
-
-  const handleFiles=e=>{
-    Array.from(e.target.files).forEach(f=>{
-      const r=new FileReader();
-      r.onload=ev=>setS(s=>({...s,fotos:[...s.fotos,{id:uid(),dataUrl:ev.target.result,caption:''}]}));
-      r.readAsDataURL(f);
-    });e.target.value='';
-  };
-  const save=()=>{mic.stop();setS(s=>({...s,fotos:s.fotos.map(f=>f.id===editId?{...f,caption:capText}:f)}));setEditId(null);};
-
-  return(
-    <div className="screen">
-      <div style={{background:'linear-gradient(135deg,#001a10,#0d0d0d)',padding:'24px 20px 20px',position:'relative'}}>
-        <div className="stepNum">02</div>
-        <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'var(--green)',letterSpacing:3,marginBottom:6}}>PASO 2 DE 4</div>
-        <div className="sectionTitle">FOTOGRAFÍAS<br/>DEL SINIESTRO</div>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:10}}>
-          <div style={{fontFamily:'Barlow Condensed',fontSize:48,fontWeight:900,color:S.fotos.length>0?'var(--green)':'var(--surface2)',lineHeight:1}}>{S.fotos.length}</div>
-          <div style={{fontSize:15,color:'var(--text2)'}}>foto{S.fotos.length!==1?'s':''} tomada{S.fotos.length!==1?'s':''}</div>
-        </div>
-      </div>
-
-      <div className="content" style={{padding:'16px 0 120px'}}>
-        <div style={{padding:'0 16px 14px'}}>
-          <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" onChange={handleFiles} style={{display:'none'}}/>
-          <button onClick={()=>fileRef.current.click()} className="actionBtn primary">
-            📷 TOMAR FOTO CON LA CÁMARA
+        {/* ACTION BUTTONS */}
+        <div style={{display:'flex',gap:12,paddingBottom:8}}>
+          <button onClick={saveAndNext} className="btn primary" style={{flex:2,fontSize:17,padding:'18px'}}>
+            💾 GUARDAR Y SIGUIENTE FOTO
+          </button>
+          <button onClick={finish} className="btn success" style={{flex:1,fontSize:14,padding:'18px'}}>
+            ✓ FINALIZAR<br/>FOTOS
           </button>
         </div>
+      </div>
+    </div>
+  );
 
-        {S.fotos.length===0&&(
-          <div style={{textAlign:'center',padding:'40px 20px',color:'var(--text2)'}}>
-            <div style={{fontSize:72,lineHeight:1,opacity:.3}}>📷</div>
-            <div style={{fontSize:18,fontWeight:600,marginTop:12}}>Sin fotos aún</div>
-            <div style={{fontSize:14,marginTop:6}}>Fotografía todos los daños visibles</div>
-          </div>
-        )}
-
+  // STEP: GALLERY
+  return(
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#001a10,#0d0d0d)',padding:'22px 20px 16px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--green)',letterSpacing:3,marginBottom:4}}>PASO 2 DE 4 — COMPLETADO</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--green)',lineHeight:1.05}}>
+          ✓ {S.fotos.length} FOTOS<br/>GUARDADAS
+        </div>
+      </div>
+      <div className="content" style={{padding:'14px 0 140px'}}>
         {S.fotos.map((f,i)=>(
-          <div key={f.id} className="photoCard slideIn">
+          <div key={f.id} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:20,overflow:'hidden',margin:'0 16px 14px'}}>
             <div style={{background:'var(--surface2)',padding:'10px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontFamily:'Barlow Condensed',fontSize:18,fontWeight:700,letterSpacing:1,color:'var(--text2)'}}>FOTO {i+1}</span>
-              <span style={{fontSize:13,fontWeight:600,color:f.caption?'var(--green)':'var(--text2)'}}>{f.caption?'✓ CON PIE DE FOTO':'SIN PIE'}</span>
+              <span style={{fontFamily:'Barlow Condensed',fontSize:18,fontWeight:700,color:'var(--text2)'}}>FOTO {i+1}</span>
+              <span style={{fontSize:13,fontWeight:600,color:f.caption?'var(--green)':'var(--text2)'}}>{f.caption?'✓ Con pie':'Sin pie'}</span>
             </div>
-            <img src={f.dataUrl} alt="" style={{width:'100%',maxHeight:260,objectFit:'cover',display:'block'}}/>
-            {f.caption&&(
-              <div style={{padding:'14px 16px',fontSize:16,color:'var(--text)',lineHeight:1.5,borderBottom:'1px solid var(--border)'}}>
-                {f.caption}
-              </div>
-            )}
-            <div style={{display:'flex'}}>
-              <button onClick={()=>{setEditId(f.id);setCapText(f.caption);}} style={{flex:1,padding:'16px',background:'none',border:'none',color:'var(--accent)',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:'Barlow Condensed',letterSpacing:1,borderRight:'1px solid var(--border)'}}>
-                ✏️ {f.caption?'EDITAR PIE':'AÑADIR PIE'}
-              </button>
-              <button onClick={()=>setS(s=>({...s,fotos:s.fotos.filter(x=>x.id!==f.id)}))} style={{padding:'16px 20px',background:'none',border:'none',color:'var(--red)',fontSize:20,cursor:'pointer'}}>🗑️</button>
-            </div>
+            <img src={f.dataUrl} style={{width:'100%',maxHeight:200,objectFit:'cover',display:'block'}}/>
+            {f.caption&&<div style={{padding:'12px 16px',fontSize:15,color:'var(--text)',lineHeight:1.5}}>{f.caption}</div>}
           </div>
         ))}
-      </div>
-
-      {/* MODAL PIE DE FOTO */}
-      {editId&&(
-        <div className="modal">
-          <div className="modalSheet slideUp">
-            <div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--accent)',letterSpacing:1,marginBottom:14}}>✏️ PIE DE FOTO</div>
-            {editFoto&&<img src={editFoto.dataUrl} style={{width:'100%',maxHeight:140,objectFit:'cover',borderRadius:14,marginBottom:14}}/>}
-            <textarea className="bigTextarea" value={capText} onChange={e=>setCapText(e.target.value)} rows={3}
-              placeholder="Describe el daño visible en esta foto..."
-              style={{borderColor:mic.on?'var(--red)':undefined,marginBottom:12}}/>
-            <button onClick={mic.toggle} className={'actionBtn '+(mic.on?'danger':'secondary')} style={{marginBottom:14}}>
-              🎙️ {mic.on?'● ESCUCHANDO — toca para parar':'DICTAR EL PIE DE FOTO'}
-            </button>
-            <div style={{display:'flex',gap:12}}>
-              <button onClick={()=>{mic.stop();setEditId(null);}} className="actionBtn secondary" style={{flex:1,margin:0}}>CANCELAR</button>
-              <button onClick={save} className="actionBtn primary" style={{flex:2,margin:0}}>✓ GUARDAR</button>
-            </div>
-          </div>
+        <div style={{padding:'8px 16px'}}>
+          <button onClick={()=>setStep('camera')} className="btn secondary" style={{marginBottom:10,fontSize:16}}>
+            📷 AÑADIR MÁS FOTOS
+          </button>
         </div>
-      )}
+      </div>
+      <div className="nextBtn">
+        <button onClick={()=>setTab('narracion')} className="btn primary" style={{fontSize:20,padding:'20px'}}>
+          GUARDAR Y CONTINUAR → NARRACIÓN
+        </button>
+      </div>
     </div>
   );
 }
 
-// ── PANTALLA: NARRACIÓN ────────────────────────────────────────
-function PantallaNarracion({S,upd}){
+// ════════ PANTALLA NARRACIÓN ══════════════════════════════════════
+function PantallaNarracion({S,upd,setTab}){
   return(
-    <div className="screen">
-      <div style={{background:'linear-gradient(135deg,#00101a,#0d0d0d)',padding:'24px 20px 20px',position:'relative'}}>
-        <div className="stepNum">03</div>
-        <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'var(--blue)',letterSpacing:3,marginBottom:6}}>PASO 3 DE 4</div>
-        <div className="sectionTitle">NARRACIÓN<br/>Y CAUSA</div>
-        <div style={{fontSize:14,color:'var(--text2)',marginTop:8}}>Toca 🎙️ en cualquier campo para dictar</div>
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#00101a,#0d0d0d)',padding:'22px 20px 16px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--blue)',letterSpacing:3,marginBottom:4}}>PASO 3 DE 4</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--text)',lineHeight:1.05}}>NARRACIÓN<br/>DEL SINIESTRO</div>
+        <div style={{fontSize:14,color:'var(--text2)',marginTop:6}}>Toca 🎙️ en cada campo. Toca de nuevo para parar.</div>
       </div>
-
-      <div className="content" style={{padding:'20px 16px 120px'}}>
-        <BigField label="NARRACIÓN COMPLETA DEL SINIESTRO"
-          value={S.narracion} onChange={v=>upd('narracion',v)}
-          placeholder="Dicta o escribe la descripción completa del siniestro: qué ocurrió, cuándo, cómo y qué daños presenta..."
-          multiline rows={6}/>
-        <div style={{fontSize:13,color:'var(--text2)',textAlign:'right',marginTop:-10,marginBottom:16,letterSpacing:.5}}>
-          {S.narracion.length} caracteres
+      <div className="content" style={{padding:'18px 16px 140px'}}>
+        {/* 1. CAUSA */}
+        <MicField
+          label="1. CAUSA"
+          value={S.causa||''}
+          onChange={v=>upd('causa',v)}
+          placeholder="Ej: Rotura de tubería empotrada bajo solería de cocina..."
+          multiline rows={3}
+        />
+        {/* 2. EFECTO */}
+        <MicField
+          label="2. EFECTO"
+          value={S.efecto||''}
+          onChange={v=>upd('efecto',v)}
+          placeholder="Ej: Humedades en solería, paredes y techo del piso inferior..."
+          multiline rows={3}
+        />
+        {/* 3. VALORACIÓN */}
+        <div style={{marginBottom:16}}>
+          <label className="fieldLabel">3. VALORACIÓN ESTIMADA DE DAÑOS</label>
+          <div style={{fontSize:13,color:'var(--text2)',marginBottom:8}}>
+            💡 Puedes decir el importe en palabras: "mil quinientos euros", "dos mil trescientos"...
+          </div>
+          <MicField
+            label=""
+            value={S.valoracion||''}
+            onChange={v=>upd('valoracion',v)}
+            placeholder="Ej: 1500 o di «mil quinientos»"
+            isNumber={true}
+          />
         </div>
-
-        <BigField label="CAUSA PRINCIPAL DEL SINIESTRO" value={S.causa||''} onChange={v=>upd('causa',v)}
-          placeholder="Ej: Rotura de tubería empotrada, incendio fortuito, robo con fuerza..."/>
-        <BigField label="ELEMENTOS AFECTADOS" value={S.elementos||''} onChange={v=>upd('elementos',v)}
-          placeholder="Ej: Solado cocina, tabique salón, mobiliario..."/>
-        <BigField label="VALORACIÓN ESTIMADA DE DAÑOS (€)" value={S.valoracion||''} onChange={v=>upd('valoracion',v)}
-          placeholder="0,00" type="number"/>
-        <BigField label="OBSERVACIONES ADICIONALES" value={S.notas||''} onChange={v=>upd('notas',v)}
-          placeholder="Cualquier observación relevante..." multiline rows={2}/>
+        {/* 4. OBSERVACIONES */}
+        <ObsField obs={S.observaciones||[]} onChange={v=>upd('observaciones',v)}/>
+      </div>
+      <div className="nextBtn">
+        <button onClick={()=>setTab('catastro')} className="btn primary" style={{fontSize:20,padding:'20px'}}>
+          GUARDAR Y CONTINUAR → CATASTRO
+        </button>
       </div>
     </div>
   );
 }
 
-// ── PANTALLA: CATASTRO ─────────────────────────────────────────
-function PantallaCatastro({S,setS,addLog}){
+// ════════ PANTALLA CATASTRO ═══════════════════════════════════════
+function PantallaCatastro({S,setS,addLog,setTab}){
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState('');
   const [copied,setCopied]=useState('');
@@ -620,136 +656,102 @@ function PantallaCatastro({S,setS,addLog}){
       if(accuracy>100)addLog('⚠️ Precisión baja. Sal al exterior.','error');
       else addLog('✓ Precisión OK','success');
     }catch(e){
-      const msg=e.code===1?'Permiso denegado. Activa ubicación en Ajustes de Chrome.':e.message;
-      setErr(msg);
+      setErr(e.code===1?'Permiso denegado. Activa ubicación en Ajustes de Chrome.':e.message);
     }
     setLoading(false);
   };
 
-  const copiar=async(campo,valor)=>{
-    try{await navigator.clipboard.writeText(String(valor));setCopied(campo);setTimeout(()=>setCopied(''),3000);}catch(e){}
+  const copiar=async(campo,val)=>{
+    try{await navigator.clipboard.writeText(String(val));setCopied(campo);setTimeout(()=>setCopied(''),3000);}catch(e){}
   };
 
   const setRC=v=>setS(s=>({...s,rcManual:v.toUpperCase(),catastro:v?{rc:v.toUpperCase(),direccion:'Referencia introducida manualmente',manual:true}:null}));
   const rcOk=S.catastro?.rc?.length>=7;
 
   return(
-    <div className="screen">
-      <div style={{background:'linear-gradient(135deg,#0d1a00,#0d0d0d)',padding:'24px 20px 20px',position:'relative'}}>
-        <div className="stepNum">04</div>
-        <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'#a3e635',letterSpacing:3,marginBottom:6}}>PASO 4 DE 4</div>
-        <div className="sectionTitle">REFERENCIA<br/>CATASTRAL</div>
-        <div style={{fontSize:14,color:'var(--text2)',marginTop:8}}>3 pasos sencillos para identificar la finca</div>
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#0d1a00,#0d0d0d)',padding:'22px 20px 16px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'#a3e635',letterSpacing:3,marginBottom:4}}>PASO 4 DE 4</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--text)',lineHeight:1.05}}>REFERENCIA<br/>CATASTRAL</div>
+        <div style={{fontSize:14,color:'var(--text2)',marginTop:6}}>3 pasos para identificar la finca</div>
       </div>
-
-      <div className="content" style={{padding:'16px 0 120px'}}>
-
-        {/* PASO 1: GPS */}
+      <div className="content" style={{padding:'16px 0 140px'}}>
+        {/* P1 GPS */}
         <div className="card">
-          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',letterSpacing:1,marginBottom:14}}>
-            1️⃣ OBTENER POSICIÓN GPS
-          </div>
-          {!S.gps&&!loading&&(
-            <button onClick={geolocate} className="actionBtn primary">📍 OBTENER MI POSICIÓN GPS</button>
-          )}
+          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',marginBottom:14}}>1️⃣ OBTENER POSICIÓN GPS</div>
+          {!S.gps&&!loading&&<button onClick={geolocate} className="btn primary">📍 OBTENER MI POSICIÓN GPS</button>}
           {loading&&(
-            <div style={{display:'flex',alignItems:'center',gap:16,padding:'16px',background:'var(--surface2)',borderRadius:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:14,padding:16,background:'var(--surface2)',borderRadius:14}}>
               <div style={{width:28,height:28,borderRadius:'50%',border:'3px solid var(--border)',borderTopColor:'var(--accent)',animation:'spin .8s linear infinite',flexShrink:0}}/>
-              <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:700,color:'var(--accent)'}}>OBTENIENDO GPS...</div>
+              <span style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:700,color:'var(--accent)'}}>OBTENIENDO GPS...</span>
             </div>
           )}
-          {err&&(
-            <div style={{background:'#450a0a',border:'1px solid var(--red)',borderRadius:14,padding:'14px 16px',fontSize:16,color:'#fca5a5',lineHeight:1.5}}>
-              ⚠️ {err}
-            </div>
-          )}
+          {err&&<div style={{background:'#450a0a',border:'1px solid var(--red)',borderRadius:14,padding:'14px 16px',fontSize:16,color:'#fca5a5',marginTop:8}}>⚠️ {err}</div>}
           {S.gps&&(
             <div>
-              <div className="coordBox">
-                <div>
-                  <div className="coordLabel">LATITUD — copia primero</div>
-                  <div className="coordVal">{S.gps.lat.toFixed(6)}</div>
+              {[['lat','LATITUD (copia primero)',S.gps.lat.toFixed(6)],['lon','LONGITUD (copia después)',S.gps.lon.toFixed(6)]].map(([id,label,val])=>(
+                <div key={id} style={{background:'var(--surface2)',borderRadius:14,padding:'14px 16px',marginBottom:10,display:'flex',alignItems:'center',justifyContent:'space-between',border:'1px solid var(--border)'}}>
+                  <div>
+                    <div style={{fontSize:11,color:'var(--text2)',letterSpacing:1,fontWeight:600,marginBottom:4}}>{label}</div>
+                    <div className="coordVal">{val}</div>
+                  </div>
+                  <button onClick={()=>copiar(id,val)} style={{padding:'10px 14px',background:copied===id?'#052e16':'var(--surface)',border:'1px solid '+(copied===id?'var(--green)':'var(--border)'),borderRadius:10,color:copied===id?'var(--green)':'var(--text2)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Barlow Condensed',letterSpacing:1}}>
+                    {copied===id?'✓ COPIADA':'📋 COPIAR'}
+                  </button>
                 </div>
-                <button className={'copyBtn'+(copied==='lat'?' done':'')} onClick={()=>copiar('lat',S.gps.lat.toFixed(6))}>
-                  {copied==='lat'?'✓ COPIADA':'📋 COPIAR'}
-                </button>
-              </div>
-              <div className="coordBox">
-                <div>
-                  <div className="coordLabel">LONGITUD — copia después</div>
-                  <div className="coordVal">{S.gps.lon.toFixed(6)}</div>
-                </div>
-                <button className={'copyBtn'+(copied==='lon'?' done':'')} onClick={()=>copiar('lon',S.gps.lon.toFixed(6))}>
-                  {copied==='lon'?'✓ COPIADA':'📋 COPIAR'}
-                </button>
-              </div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+              ))}
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:15,color:S.gps.accuracy>100?'#fca5a5':'var(--green)',fontWeight:600}}>Precisión: ±{Math.round(S.gps.accuracy)}m {S.gps.accuracy>100?'⚠️':'✓'}</span>
-                <button onClick={geolocate} style={{padding:'8px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text2)',fontSize:14,fontWeight:600,cursor:'pointer',fontFamily:'Barlow'}}>↺ Repetir</button>
+                <button onClick={geolocate} style={{padding:'8px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text2)',fontSize:14,fontWeight:600,cursor:'pointer'}}>↺ Repetir</button>
               </div>
             </div>
           )}
         </div>
 
-        {/* PASO 2: CATASTRO */}
+        {/* P2 CATASTRO */}
         <div className="card">
-          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',letterSpacing:1,marginBottom:14}}>
-            2️⃣ BUSCAR PARCELA EN CATASTRO
-          </div>
-          <div style={{background:'var(--surface2)',borderRadius:14,padding:'14px 16px',marginBottom:14,fontSize:15,color:'var(--text2)',lineHeight:1.8}}>
-            <b style={{color:'var(--text)'}}>Instrucciones:</b><br/>
-            ➊ Copia la <b style={{color:'var(--accent)'}}>Latitud</b> → abre Catastro<br/>
-            ➋ Pestaña <b style={{color:'var(--accent)'}}>"Coordenadas"</b> → pega en Latitud<br/>
-            ➌ Vuelve aquí, copia <b style={{color:'var(--accent)'}}>Longitud</b> → pégala<br/>
-            ➍ Pulsa <b style={{color:'var(--accent)'}}>"Buscar"</b> → toca la parcela correcta<br/>
-            ➎ Copia la RC → vuelve aquí (← atrás)
+          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',marginBottom:12}}>2️⃣ BUSCAR PARCELA EN CATASTRO</div>
+          <div style={{background:'var(--surface2)',borderRadius:12,padding:'12px 16px',marginBottom:14,fontSize:15,color:'var(--text2)',lineHeight:1.8}}>
+            ➊ Copia <b style={{color:'var(--accent)'}}>Latitud</b> → abre Catastro<br/>
+            ➋ Pestaña <b style={{color:'var(--accent)'}}>"Coordenadas"</b> → pega Latitud<br/>
+            ➌ Vuelve aquí → copia <b style={{color:'var(--accent)'}}>Longitud</b> → pégala<br/>
+            ➍ <b style={{color:'var(--accent)'}}>"Buscar"</b> → toca la parcela correcta<br/>
+            ➎ Copia la RC → vuelve (← atrás) → Paso 3
           </div>
           <a href="https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCBusqueda.aspx" target="_blank" rel="noreferrer"
-            className="actionBtn primary" style={{display:'flex',textDecoration:'none',marginTop:0}}>
+            className="btn primary" style={{display:'flex',textDecoration:'none',marginTop:0}}>
             🗺️ ABRIR SEDE CATASTRO
           </a>
         </div>
 
-        {/* PASO 3: RC */}
+        {/* P3 RC */}
         <div className="card">
-          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',letterSpacing:1,marginBottom:14}}>
-            3️⃣ PEGAR REFERENCIA CATASTRAL
-          </div>
+          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',marginBottom:12}}>3️⃣ PEGAR REFERENCIA CATASTRAL</div>
           <label className="fieldLabel">REFERENCIA CATASTRAL (20 CARACTERES)</label>
-          <input className={'rcInput'+(rcOk?' valid':'')} value={S.rcManual||''} onChange={e=>setRC(e.target.value)}
-            placeholder="9872023VH5797S0001WX" maxLength={20}/>
-          <div style={{marginTop:10,textAlign:'center',fontSize:14,color:'var(--text2)'}}>
-            {(S.rcManual||'').length}/20 caracteres
-          </div>
+          <input className={'rcInput'+(rcOk?' ok':'')} value={S.rcManual||''} onChange={e=>setRC(e.target.value)} placeholder="9872023VH5797S0001WX" maxLength={20}/>
+          <div style={{marginTop:8,textAlign:'center',fontSize:14,color:'var(--text2)'}}>{(S.rcManual||'').length}/20</div>
           {rcOk&&(
-            <div style={{background:'#052e16',border:'2px solid var(--green)',borderRadius:16,padding:'16px',textAlign:'center',marginTop:14}}>
-              <div style={{fontFamily:'Barlow Condensed',fontSize:26,fontWeight:900,color:'#86efac',letterSpacing:3,marginBottom:6}}>{S.catastro.rc}</div>
-              <div style={{fontSize:15,color:'#4ade80',marginBottom:10}}>✓ Referencia catastral confirmada</div>
+            <div style={{background:'#052e16',border:'2px solid var(--green)',borderRadius:16,padding:16,textAlign:'center',marginTop:14}}>
+              <div style={{fontFamily:'Barlow Condensed',fontSize:24,fontWeight:900,color:'#86efac',letterSpacing:3,marginBottom:6}}>{S.catastro.rc}</div>
+              <div style={{fontSize:15,color:'#4ade80'}}>✓ Referencia catastral confirmada</div>
               <a href={'https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?del=&mun=&rc1='+S.catastro.rc.substring(0,7)+'&rc2='+S.catastro.rc.substring(7,14)}
-                 target="_blank" rel="noreferrer" style={{fontSize:14,color:'#60a5fa',textDecoration:'none',fontWeight:600}}>
+                 target="_blank" rel="noreferrer" style={{display:'block',marginTop:8,fontSize:14,color:'#60a5fa',textDecoration:'none'}}>
                 🔗 Ver ficha catastral completa →
               </a>
             </div>
           )}
         </div>
-
-        {/* LOG */}
-        {S.log.length>0&&(
-          <div className="card">
-            <div style={{fontFamily:'Barlow Condensed',fontSize:16,fontWeight:700,color:'var(--text2)',letterSpacing:1,marginBottom:10}}>📋 LOG DE ACTIVIDAD</div>
-            {S.log.slice(-5).map((l,i)=>(
-              <div key={i} style={{fontSize:14,marginBottom:6,color:l.type==='error'?'#fca5a5':l.type==='success'?'#86efac':'var(--text2)',lineHeight:1.4}}>
-                <span style={{color:'#444',fontSize:12}}>{l.t} </span>{l.msg}
-              </div>
-            ))}
-          </div>
-        )}
+      </div>
+      <div className="nextBtn">
+        <button onClick={()=>setTab('envio')} className="btn primary" style={{fontSize:20,padding:'20px'}}>
+          GUARDAR Y CONTINUAR → ENVÍO
+        </button>
       </div>
     </div>
   );
 }
 
-// ── PANTALLA: ENVÍO ────────────────────────────────────────────
+// ════════ PANTALLA ENVÍO ══════════════════════════════════════════
 function PantallaEnvio({S,setS,addLog}){
   const [phase,setPhase]=useState('idle');
   const [detail,setDetail]=useState('');
@@ -760,7 +762,7 @@ function PantallaEnvio({S,setS,addLog}){
   if(!S.asegurado)issues.push('Asegurado vacío');
   if(!S.perito)issues.push('Perito vacío');
   if(S.fotos.length===0)issues.push('Sin fotografías');
-  if(S.narracion.length<20)issues.push('Narración muy corta');
+  if(!(S.causa||'').length&&!(S.efecto||'').length)issues.push('Narración vacía (causa y efecto)');
   if(!S.catastro)issues.push('Sin referencia catastral');
 
   const enviar=async()=>{
@@ -770,8 +772,9 @@ function PantallaEnvio({S,setS,addLog}){
       expediente:{id:S.id,poliza:S.poliza,asegurado:S.asegurado,perito:S.perito,
         fecha_siniestro:S.fechaSiniestro,fecha_visita:S.fechaVisita,hora_visita:S.horaVisita,
         expediente_cia:S.expCia,cobertura:S.cobertura,motivo_cobertura:S.motivoCob,
-        causa:S.causa,elementos:S.elementos,valoracion:S.valoracion,notas:S.notas},
-      narracion:S.narracion,gps:S.gps,catastro:S.catastro,
+        causa:S.causa,efecto:S.efecto,valoracion:S.valoracion,
+        observaciones:S.observaciones||[]},
+      gps:S.gps,catastro:S.catastro,
       fotos:S.fotos.map(f=>({id:f.id,caption:f.caption,dataUrl:f.dataUrl})),
       metadata:{timestamp:new Date().toISOString(),carpeta:'peritos/'+S.poliza+'/'+S.id}
     };
@@ -779,7 +782,7 @@ function PantallaEnvio({S,setS,addLog}){
       const res=await fetch(MAKE_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       if(!res.ok)throw new Error('HTTP '+res.status);
       setPhase('done');setS(s=>({...s,estado:'completado'}));
-      addLog('Enviado a Make.com correctamente','success');
+      addLog('Enviado a Make.com','success');
     }catch(e){
       setPhase('error');setDetail(e.message);
       setS(s=>({...s,estado:'error'}));
@@ -787,36 +790,32 @@ function PantallaEnvio({S,setS,addLog}){
   };
 
   return(
-    <div className="screen">
-      <div style={{background:'linear-gradient(135deg,#1a1000,#0d0d0d)',padding:'24px 20px 20px',position:'relative'}}>
-        <div style={{fontFamily:'Barlow Condensed',fontSize:13,color:'var(--yellow)',letterSpacing:3,marginBottom:6}}>ENVÍO DEL INFORME</div>
-        <div className="sectionTitle">ENVIAR A<br/>MAKE.COM</div>
+    <div className="screen fadeUp">
+      <div style={{background:'linear-gradient(135deg,#1a1000,#0d0d0d)',padding:'22px 20px 16px'}}>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:11,color:'var(--yellow)',letterSpacing:3,marginBottom:4}}>ENVÍO DEL INFORME</div>
+        <div style={{fontFamily:'Barlow Condensed',fontSize:32,fontWeight:900,color:'var(--text)',lineHeight:1.05}}>ENVIAR A<br/>MAKE.COM</div>
       </div>
-
-      <div className="content" style={{padding:'16px 0 120px'}}>
-
-        {/* DEMO WARNING */}
+      <div className="content" style={{padding:'16px 0 100px'}}>
         {esDemo&&(
-          <div className="demoWarn">
+          <div style={{margin:'0 16px 14px',background:'#1a0d00',border:'2px solid var(--accent)',borderRadius:20,padding:20}}>
             <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--accent)',marginBottom:10}}>⚙️ WEBHOOK NO CONFIGURADO</div>
             <div style={{fontSize:15,color:'#fed7aa',lineHeight:1.8}}>
-              El envío real a Make está desactivado. La app funciona al 100% pero necesitas configurar el webhook para activar el envío.<br/><br/>
-              <b style={{color:'var(--accent)'}}>Pasos para activarlo:</b><br/>
-              <b>1.</b> Entra en <b>make.com</b> → nuevo escenario<br/>
-              <b>2.</b> Módulo: <b>Webhooks → Custom Webhook</b><br/>
-              <b>3.</b> Copia la URL generada<br/>
-              <b>4.</b> Abre <b>index.html</b> en editor de texto<br/>
-              <b>5.</b> Línea 7: sustituye <b>TU_WEBHOOK_AQUI</b> por tu URL<br/>
-              <b>6.</b> Sube el archivo a GitHub
+              La app funciona al 100% pero el envío real a Make está desactivado.<br/><br/>
+              <b style={{color:'var(--accent)'}}>Para activarlo:</b><br/>
+              1. Entra en <b>make.com</b> → nuevo escenario<br/>
+              2. Módulo: <b>Webhooks → Custom Webhook</b><br/>
+              3. Copia la URL generada por Make<br/>
+              4. Abre <b>index.html</b> en editor de texto<br/>
+              5. Línea 7: sustituye <b>TU_WEBHOOK_AQUI</b> por tu URL<br/>
+              6. Sube el archivo actualizado a GitHub
             </div>
           </div>
         )}
 
-        {/* RESUMEN */}
         <div className="card">
-          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--text)',letterSpacing:1,marginBottom:14}}>📋 RESUMEN DEL EXPEDIENTE</div>
+          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,marginBottom:14}}>📋 RESUMEN DEL EXPEDIENTE</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-            {[['Póliza',S.poliza||'—'],['Asegurado',S.asegurado||'—'],['Perito',S.perito||'—'],['F.Siniestro',S.fechaSiniestro||'—'],['F.Visita',S.fechaVisita||'—'],['Fotografías',S.fotos.length+' fotos'],['Narración',S.narracion.length+' chars'],['Catastro',S.catastro?.rc||'—'],['Cobertura',(S.cobertura||'—').toUpperCase()]].map(([k,v])=>(
+            {[['Póliza',S.poliza||'—'],['Asegurado',S.asegurado||'—'],['Perito',S.perito||'—'],['F.Siniestro',S.fechaSiniestro||'—'],['Fotografías',S.fotos.length+' fotos'],['Catastro',S.catastro?.rc||'—'],['Cobertura',(S.cobertura||'—').toUpperCase()],['Valoración',S.valoracion?S.valoracion+'€':'—'],['Observaciones',(S.observaciones||[]).length+' items']].map(([k,v])=>(
               <div key={k} style={{background:'var(--surface2)',borderRadius:12,padding:'12px 14px'}}>
                 <div style={{fontSize:11,color:'var(--text2)',letterSpacing:1,marginBottom:3,fontWeight:600}}>{k}</div>
                 <div style={{fontSize:15,color:'var(--text)',fontWeight:600,wordBreak:'break-all'}}>{v}</div>
@@ -825,64 +824,80 @@ function PantallaEnvio({S,setS,addLog}){
           </div>
         </div>
 
-        {/* PENDIENTES */}
-        {issues.length>0&&(
-          <div className="card" style={{borderColor:'var(--yellow)'}}>
-            <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--yellow)',marginBottom:10}}>⚠️ PENDIENTE</div>
-            {issues.map((iss,i)=>(
-              <div key={i} style={{fontSize:16,color:'#fcd34d',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
-                <span>⚠️</span> {iss}
+        {(S.observaciones||[]).length>0&&(
+          <div className="card">
+            <div style={{fontFamily:'Barlow Condensed',fontSize:18,fontWeight:800,marginBottom:12}}>📝 OBSERVACIONES</div>
+            {(S.observaciones||[]).map((o,i)=>(
+              <div key={i} style={{display:'flex',gap:10,marginBottom:8}}>
+                <span style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:900,color:'var(--accent)',flexShrink:0}}>{i+1}.</span>
+                <span style={{fontSize:15,color:'var(--text)',lineHeight:1.5}}>{o}</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* FLUJO */}
+        {issues.length>0&&(
+          <div className="card" style={{borderColor:'var(--yellow)'}}>
+            <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--yellow)',marginBottom:10}}>⚠️ PENDIENTE</div>
+            {issues.map((iss,i)=><div key={i} style={{fontSize:16,color:'#fcd34d',marginBottom:8}}>⚠️ {iss}</div>)}
+          </div>
+        )}
+
         <div className="card">
-          <div style={{fontFamily:'Barlow Condensed',fontSize:20,fontWeight:800,color:'var(--text)',letterSpacing:1,marginBottom:14}}>⚙️ FLUJO AUTOMÁTICO</div>
-          {[['📱','PeritoApp','Fotos + narración + GPS + catastro'],['🔗','Webhook Make','Recibe el expediente completo'],['☁️','Google Drive','Sube fotos y ficha catastral'],['🌐','Web Aseguradora','Rellena el formulario online'],['🤖','GPT-4o','Redacta el informe pericial'],['💾','Guarda informe','En la plataforma de la cía.'],['📬','Telegram','Notifica al perito ✓']].map(([ico,t,d],i,arr)=>(
+          <div style={{fontFamily:'Barlow Condensed',fontSize:18,fontWeight:800,marginBottom:12}}>⚙️ FLUJO AUTOMÁTICO</div>
+          {[['📱','PeritoApp','Fotos + narración + GPS + catastro'],['🔗','Webhook Make','Recibe el expediente completo'],['☁️','Google Drive','Sube fotos y catastro'],['🌐','Web Aseguradora','Rellena el formulario online'],['🤖','GPT-4o','Redacta el informe pericial'],['💾','Guarda','En la plataforma de la cía.'],['📬','Telegram','Notifica al perito ✓']].map(([ico,t,d],i,arr)=>(
             <div key={i}>
-              <div className="flowStep">
-                <span className="flowIco">{ico}</span>
-                <div><div className="flowTitle">{t}</div><div className="flowDesc">{d}</div></div>
+              <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',background:'var(--surface2)',borderRadius:12}}>
+                <span style={{fontSize:22,flexShrink:0}}>{ico}</span>
+                <div><div style={{fontFamily:'Barlow Condensed',fontSize:16,fontWeight:700,color:'var(--accent)',letterSpacing:.5}}>{t}</div><div style={{fontSize:13,color:'var(--text2)'}}>{d}</div></div>
               </div>
-              {i<arr.length-1&&<div style={{textAlign:'center',fontSize:18,color:'var(--border)',lineHeight:1.2}}>↓</div>}
+              {i<arr.length-1&&<div style={{textAlign:'center',fontSize:16,color:'var(--border)',lineHeight:1.3}}>↓</div>}
             </div>
           ))}
         </div>
 
-        {/* ESTADOS */}
         {phase==='sending'&&(
-          <div style={{margin:'0 16px',display:'flex',alignItems:'center',gap:16,padding:'20px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:18}}>
+          <div style={{margin:'0 16px',display:'flex',gap:14,padding:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:18,alignItems:'center'}}>
             <div style={{width:32,height:32,borderRadius:'50%',border:'4px solid var(--border)',borderTopColor:'var(--accent)',animation:'spin .8s linear infinite',flexShrink:0}}/>
-            <div>
-              <div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--accent)'}}>ENVIANDO...</div>
-              <div style={{fontSize:14,color:'var(--text2)',marginTop:2}}>{detail}</div>
-            </div>
+            <div><div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--accent)'}}>ENVIANDO...</div><div style={{fontSize:14,color:'var(--text2)',marginTop:2}}>{detail}</div></div>
           </div>
         )}
         {phase==='done'&&(
-          <div className="successBox">
+          <div style={{margin:'0 16px',background:'#052e16',border:'2px solid var(--green)',borderRadius:20,padding:32,textAlign:'center'}}>
             <div style={{fontSize:64,lineHeight:1}}>🎉</div>
-            <div style={{fontFamily:'Barlow Condensed',fontSize:28,fontWeight:900,color:'var(--green)',marginTop:12,letterSpacing:1}}>¡EXPEDIENTE ENVIADO!</div>
-            <div style={{fontSize:16,color:'#d1d5db',marginTop:8,lineHeight:1.6}}>Make.com está procesando el flujo automático. Recibirás un mensaje de Telegram cuando el informe esté guardado.</div>
-            <button onClick={()=>setPhase('idle')} className="actionBtn secondary" style={{marginTop:16}}>↺ Nuevo expediente</button>
+            <div style={{fontFamily:'Barlow Condensed',fontSize:28,fontWeight:900,color:'var(--green)',marginTop:12}}>¡EXPEDIENTE ENVIADO!</div>
+            <div style={{fontSize:16,color:'#d1d5db',marginTop:8,lineHeight:1.6}}>Make.com está procesando. Recibirás Telegram cuando el informe esté guardado.</div>
           </div>
         )}
         {phase==='error'&&(
-          <div style={{margin:'0 16px',background:'#450a0a',border:'1px solid var(--red)',borderRadius:18,padding:'20px'}}>
-            <div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--red)'}}>ERROR DE ENVÍO</div>
+          <div style={{margin:'0 16px',background:'#450a0a',border:'1px solid var(--red)',borderRadius:18,padding:20}}>
+            <div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--red)'}}>ERROR</div>
             <div style={{fontSize:15,color:'#fca5a5',marginTop:6}}>{detail}</div>
-            <button onClick={enviar} className="actionBtn danger" style={{marginTop:14}}>↺ REINTENTAR</button>
+          </div>
+        )}
+        {phase==='demo'&&(
+          <div style={{margin:'0 16px',background:'#431407',border:'2px solid var(--accent)',borderRadius:18,padding:20,textAlign:'center'}}>
+            <div style={{fontSize:36}}>⚙️</div>
+            <div style={{fontFamily:'Barlow Condensed',fontSize:22,fontWeight:800,color:'var(--accent)',marginTop:8}}>CONFIGURA EL WEBHOOK</div>
+            <div style={{fontSize:15,color:'#fed7aa',marginTop:6}}>Sigue las instrucciones del aviso naranja de arriba</div>
           </div>
         )}
 
-        {(phase==='idle'||phase==='demo')&&(
-          <div style={{padding:'0 16px'}}>
-            <button onClick={enviar} disabled={issues.length>0} className={'actionBtn '+(issues.length>0?'secondary':'primary')} style={{fontSize:20,padding:'22px',letterSpacing:1}}>
+        {(phase==='idle'||phase==='demo'||phase==='error')&&(
+          <div style={{padding:'10px 16px'}}>
+            <button onClick={enviar} disabled={issues.length>0} className={'btn '+(issues.length>0?'secondary':'primary')} style={{fontSize:20,padding:'22px'}}>
               {esDemo?'⚙️ VER CONFIGURACIÓN WEBHOOK':'🚀 ENVIAR EXPEDIENTE A MAKE.COM'}
             </button>
-            {issues.length>0&&<div style={{fontSize:14,color:'var(--text2)',textAlign:'center',marginTop:10}}>Completa los apartados pendientes primero</div>}
+          </div>
+        )}
+        {phase==='done'&&(
+          <div style={{padding:'10px 16px'}}>
+            <button onClick={()=>setPhase('idle')} className="btn secondary" style={{fontSize:18,padding:'18px'}}>↺ Nuevo expediente</button>
+          </div>
+        )}
+        {phase==='error'&&(
+          <div style={{padding:'0 16px'}}>
+            <button onClick={enviar} className="btn primary" style={{fontSize:18,padding:'18px',marginTop:10}}>↺ REINTENTAR</button>
           </div>
         )}
       </div>
@@ -890,15 +905,13 @@ function PantallaEnvio({S,setS,addLog}){
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// APP ROOT
-// ════════════════════════════════════════════════════════════════
+// ════════ APP ROOT ════════════════════════════════════════════════
 function App(){
   const [tab,setTab]=useState('inicio');
   const [S,setS]=useState({
     id:uid(),poliza:'',asegurado:'',perito:'',
     fechaSiniestro:'',fechaVisita:fmtDate(),horaVisita:fmtTime(),expCia:'',
-    fotos:[],narracion:'',causa:'',elementos:'',valoracion:'',notas:'',
+    fotos:[],causa:'',efecto:'',valoracion:'',observaciones:[],notas:'',
     cobertura:'',motivoCob:'',
     catastro:null,gps:null,rcManual:'',
     estado:'borrador',log:[]
@@ -906,14 +919,14 @@ function App(){
   const upd=(k,v)=>setS(s=>({...s,[k]:v}));
   const addLog=(msg,type='info')=>setS(s=>({...s,log:[...s.log,{msg,type,t:fmtTime()}]}));
 
-  const pct=Math.round([
-    !!(S.poliza&&S.asegurado&&S.perito),
-    S.fotos.length>0,
-    S.narracion.length>20,
-    !!(S.catastro?.rc),
-  ].filter(Boolean).length/4*100);
-
-  const stateColor={borrador:'var(--yellow)',subiendo:'var(--blue)',completado:'var(--green)',error:'var(--red)'};
+  const steps=[
+    {id:'datos',label:'Datos del expediente',done:!!(S.poliza&&S.asegurado&&S.perito),ico:'📋',tab:'datos'},
+    {id:'fotos',label:'Fotografías del siniestro',done:S.fotos.length>0,ico:'📷',tab:'fotos'},
+    {id:'narracion',label:'Causa, efecto y valoración',done:!!(S.causa||S.efecto),ico:'🎙️',tab:'narracion'},
+    {id:'catastro',label:'Referencia catastral',done:!!(S.catastro?.rc),ico:'🏛️',tab:'catastro'},
+  ];
+  const pct=Math.round(steps.filter(s=>s.done).length/steps.length*100);
+  const stateColor={borrador:'#f59e0b',subiendo:'#3b82f6',completado:'#22c55e',error:'#ef4444'};
 
   const navItems=[
     {id:'inicio',ico:'🏠',label:'INICIO'},
@@ -926,20 +939,23 @@ function App(){
 
   return(
     <div style={{position:'fixed',inset:0,background:'var(--bg)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg);}}`}</style>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @keyframes recPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.88);}}
+        @keyframes checkBounce{0%{transform:scale(0);}70%{transform:scale(1.2);}100%{transform:scale(1);}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+      `}</style>
 
-      {/* PROGRESS TOP BAR */}
-      <div className="progressTop">
-        <div className="progressFill" style={{width:pct+'%'}}/>
-      </div>
+      {/* PROGRESS TOP */}
+      <div className="progressBar"><div className="progressFill" style={{width:pct+'%'}}/></div>
 
-      {/* CONTENT AREA */}
+      {/* SCREENS */}
       <div style={{flex:1,position:'relative',overflow:'hidden'}}>
-        {tab==='inicio'   &&<PantallaInicio    S={S} setTab={setTab}/>}
-        {tab==='datos'    &&<PantallaDatos     S={S} upd={upd}/>}
-        {tab==='fotos'    &&<PantallaFotos     S={S} setS={setS}/>}
-        {tab==='narracion'&&<PantallaNarracion S={S} upd={upd}/>}
-        {tab==='catastro' &&<PantallaCatastro  S={S} setS={setS} addLog={addLog}/>}
+        {tab==='inicio'   &&<PantallaInicio    S={S} setTab={setTab} pct={pct} steps={steps}/>}
+        {tab==='datos'    &&<PantallaDatos     S={S} upd={upd} setTab={setTab}/>}
+        {tab==='fotos'    &&<PantallaFotos     S={S} setS={setS} setTab={setTab}/>}
+        {tab==='narracion'&&<PantallaNarracion S={S} upd={upd} setTab={setTab}/>}
+        {tab==='catastro' &&<PantallaCatastro  S={S} setS={setS} addLog={addLog} setTab={setTab}/>}
         {tab==='envio'    &&<PantallaEnvio     S={S} setS={setS} addLog={addLog}/>}
       </div>
 
